@@ -458,7 +458,6 @@ Content-Type: application/json
   "name": "Desert Jump",
   "description": "사막 테마의 점프 맵",
   "size": "MEDIUM",
-  "difficulty": "NORMAL",
   "orderNum": 1
 }
 ```
@@ -477,7 +476,6 @@ Content-Type: application/json
   "name": "Desert Jump",
   "description": "사막 테마의 점프 맵",
   "size": "MEDIUM",
-  "difficulty": "NORMAL",
   "orderNum": 1,
   "isActive": true,
   "createdAt": "2026-02-25T10:30:00"
@@ -586,7 +584,7 @@ Content-Type: application/json
 
 설명:  
 해당 맵을 비활성화 처리한다.  
-실제 데이터는 삭제되지 않으며, isActive를 false로 변경한다.
+실제 데이터는 삭제되지 않으며, isDelete를 false로 변경한다.
 
 ---
 
@@ -632,7 +630,7 @@ Authorization: Bearer {accessToken}
 
 설명:  
 등록된 맵 목록을 조회한다.  
-기본적으로 활성 맵(isActive = true)만 반환한다.  
+기본적으로 활성 맵(isDelete = true)만 반환한다.  
 SUPER_ADMIN은 includeInactive 옵션을 통해 비활성 맵을 포함하여 조회할 수 있다.
 
 ---
