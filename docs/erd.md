@@ -89,15 +89,16 @@
 
 게임에서 사용되는 맵 정보를 관리한다.
 
-| 컬럼명 | 타입 | 설명 |
-|--------|------|------|
-| id | BIGINT (PK) | 맵 고유 식별자 |
-| name | VARCHAR(50) | 맵 이름 |
-| description | VARCHAR(150) | 맵 설명 |
-| size | ENUM | 맵 크기 (SMALL, MEDIUM, LARGE) |
-| difficulty | ENUM | 난이도 (EASY, NORMAL, HARD 등) |
-| order_num | INT | 표시 순서 |
-| is_active | BOOLEAN | 사용 여부 |
+| 컬럼명         | 타입 | 설명                          |
+|-------------|------|-----------------------------|
+| id          | BIGINT (PK) | 맵 고유 식별자                    |
+| name        | VARCHAR(50) | 맵 이름                        |
+| description | VARCHAR(150) | 맵 설명                        |
+| size        | ENUM | 맵 크기 (SMALL, MEDIUM, LARGE) |
+| order_num   | INT | 표시 순서                       |
+| is_active   | BOOLEAN | 사용 여부                       |
+| is_delete   | BOOLEAN | 삭제 여부                       |
+
 | created_at | DATETIME | 생성일 |
 
 ### 설계 의도
@@ -139,16 +140,19 @@
 
 랭킹 집계의 핵심 테이블이다.
 
-| 컬럼명 | 타입 | 설명 |
-|--------|------|------|
-| id | BIGINT (PK) | 매치 고유 식별자 |
-| uuid | VARCHAR(36) | 외부 식별 UUID |
-| created_at | DATETIME | 플레이 시간 |
-| score | INT | 점수 |
-| store_id | BIGINT (FK) | 매장 |
-| player_id | BIGINT (FK) | 플레이어 |
-| map_id | BIGINT (FK) | 맵 |
-| season_id | BIGINT (FK, NULL) | 시즌 |
+| 컬럼명        | 타입                | 설명         |
+|------------|-------------------|------------|
+| id         | BIGINT (PK)       | 매치 고유 식별자  |
+| uuid       | VARCHAR(36)       | 외부 식별 UUID |
+| created_at | DATETIME          | 플레이 시간     |
+| score      | INT               | 점수         |
+| store_id   | BIGINT (FK)       | 매장         |
+| player_id  | BIGINT (FK)       | 플레이어       |
+| map_id     | BIGINT (FK)       | 맵          |
+| season_id  | BIGINT (FK, NULL) | 시즌         |
+| difficulty | ENUM              | 난이도        |
+| device_id    | BIGINT (FK)       | 기기               |
+
 
 ### 설계 의도
 
