@@ -49,13 +49,16 @@
 
 매장 정보를 관리하는 테이블이다.
 
-| 컬럼명 | 타입 | 설명 |
-|--------|------|------|
-| id | BIGINT (PK) | 매장 고유 식별자 |
-| name | VARCHAR(100) | 매장명 |
-| region | VARCHAR(100) | 지역 |
-| address | VARCHAR(255) | 주소 |
-| created_at | DATETIME | 생성일 |
+| 컬럼명        | 타입           | 설명        |
+|------------|--------------|-----------|
+| id         | BIGINT (PK)  | 매장 고유 식별자 |
+| name       | VARCHAR(100) | 매장명       |
+| region     | VARCHAR(100) | 지역        |
+| address    | VARCHAR(255) | 주소        |
+| created_at | DATETIME     | 생성일       |
+| is_active  | BOOLEAN      | 폐업여부      |
+| closed_at     | DATETIME     | 폐업일 (NULL 허용)   |
+
 
 ### 관계
 
