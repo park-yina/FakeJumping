@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="kr" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <link th:href="@{/css/bootstrap.min.css}"
+          href="../css/bootstrap.min.css" rel="stylesheet">
+    <title>짝퉁배틀 로그인 화면</title>
+
+    <style>
+        body {
+            background-color: #f5f6f8;
+            height: 100vh;
+        }
+
+        .login-card {
+            max-width: 420px;
+            border-radius: 12px;
+        }
+
+        .logo {
+            font-size: 26px;
+            font-weight: 700;
+            color: #343a40;
+        }
+    </style>
+</head>
+<body class="d-flex align-items-center justify-content-center">
+
+<div class="container">
+
+    <div class="row justify-content-center">
+
+        <div class="col-12 col-sm-10 col-md-6 col-lg-4">
+
+            <div class="card login-card shadow-sm">
+
+                <div class="card-body p-4">
+
+                    <div class="text-center mb-4">
+                        <div class="logo">짝퉁배틀</div>
+                        <small class="text-muted">관리자 로그인</small>
+                    </div>
+
+                    <form id="loginForm">
+
+                        <div class="mb-3">
+                            <label class="form-label">아이디</label>
+                            <input
+                                    type="text"
+                                    class="form-control"
+                                    id="username"
+                                    placeholder="아이디 입력"
+                                    required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">비밀번호</label>
+                            <input
+                                    type="password"
+                                    class="form-control"
+                                    id="password"
+                                    placeholder="비밀번호 입력"
+                                    required>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-dark">
+                                로그인
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+            <div class="text-center mt-3 text-muted small">
+                © FakeJumping Admin
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+    document.getElementById("loginForm").addEventListener("submit", async function(e){
+        e.preventDefault();
+
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        const response = await fetch("/auth/sign-in",{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body: JSON.stringify({
+                username:username,
+                password:password
+            })
+        });
+
+        const data = await response.json();
+
+        if(response.ok){
+
+            localStorage.setItem("accessToken", data.accessToken);
+
+            if(data.mustChangePassword){
+                window.location.href="/change-password";
+            }else{
+                window.location.href="/admin";
+            }
+
+        }else{
+            alert("로그인 실패");
+        }
+
+    });
+
+</script>
+</body>
+</html>
