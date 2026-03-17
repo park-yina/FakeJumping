@@ -4,6 +4,7 @@ import com.parkvina.fakejumping.enums.AdminRole;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,7 @@ public class JwtUtils {
 
     private Key key;
     private final Logger log = LoggerFactory.getLogger(getClass());
-
+    private static final long REFRESH_TOKEN_TIME = 60 * 60 * 24 * 7 * 1000L; // 7일
     public static final String AUTHORIZATION_HEADER = "Authorization";
     public static final String AUTHORIZATION_KEY = "auth";
     public static final String BEARER_PREFIX = "Bearer ";
@@ -52,6 +53,18 @@ public class JwtUtils {
                 .signWith(key, signatureAlgorithm)
                 .compact();
     }
+    public String createRefreshToken(Long adminId, String username, AdminRole adminRole){
+        Date now= new Date();
+        return Jwts.builder()
+                .setSubject(username)
+                .claim(ADMIN_ID_KEY, adminId)
+                .claim(AUTHORIZATION_KEY, adminRole.name())
+                .setIssuedAt(now)
+                .setExpiration(new Date(now.getTime() + REFRESH_TOKEN_TIME))
+                .signWith(key, signatureAlgorithm)
+                .compact();
+
+    }
 
     public boolean isValidToken(String token) {
         try {
@@ -76,6 +89,16 @@ public class JwtUtils {
             log.error("Token is null", npe);
             return false;
         }
+    }
+    public String extractRefreshTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+
+        for (Cookie cookie : request.getCookies()) {
+            if ("refreshToken".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
     public Authentication getAuthentication(String token) {
         Claims claims = getClaimsFromToken(token);

@@ -33,7 +33,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.equals("/auth/sign-in")
                 || path.startsWith("/css")
                 || path.startsWith("/js")
-                || path.startsWith("/images")) {
+                || path.startsWith("/images")
+                || path.equals("/auth/refresh")) {
 
             filterChain.doFilter(request, response);
             return;

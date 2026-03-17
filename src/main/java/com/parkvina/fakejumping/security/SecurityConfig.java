@@ -18,6 +18,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -26,7 +27,9 @@ public class SecurityConfig {
     private final String[] allowedUrls =
             { "/", "/auth/sign-in","/sign-inView" };
     private final JwtUtils jwtUtils;
-
+    private String[] anyRoles = Arrays.stream(AdminRole.values())
+            .map(Enum::name)
+            .toArray(String[]::new);
     public SecurityConfig(JwtUtils jwtUtils) {
         this.jwtUtils = jwtUtils;
     }
@@ -34,6 +37,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
+                .cors(cors->cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -43,7 +47,8 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(allowedUrls).permitAll()
-                        .requestMatchers("/api/stores/**","/api/seasons","/api/admins/store").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/admin/**","/change-password").hasAnyRole(anyRoles)
+                        .requestMatchers("/api/stores/**","/api/seasons","/api/admins/store","/reset/password").hasRole("SUPER_ADMIN")
                         .anyRequest().authenticated()
                 )
 

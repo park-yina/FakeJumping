@@ -9,6 +9,7 @@ import lombok.Data;
 
 public class LoginResponse {
     private String accessToken;
+    private Long adminId;
     private String username;
     private AdminRole role;
     private Boolean mustChangePassword;

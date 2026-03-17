@@ -13,5 +13,10 @@ public interface AdminMapper {
     """)
 
     Admin findByUsername(String username);
-
+    @Select("""
+        SELECT *
+        FROM admin
+        WHERE id = #{id}
+""")
+    Admin findById(Long id);
 }
