@@ -7,16 +7,16 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface AdminMapper {
     @Select("""
-        SELECT *
-        FROM admin
-        WHERE username = #{username}
-    """)
-
+                SELECT *
+                FROM admin
+                WHERE username = #{username}
+            """)
     Admin findByUsername(String username);
+
     @Select("""
-        SELECT *
-        FROM admin
-        WHERE id = #{id}
-""")
+                    SELECT *
+                    FROM admin
+                    WHERE id = #{id}
+            """)
     Admin findById(Long id);
 }

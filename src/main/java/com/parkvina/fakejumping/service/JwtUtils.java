@@ -27,7 +27,7 @@ public class JwtUtils {
 
     private Key key;
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private static final long REFRESH_TOKEN_TIME = 60 * 60 * 24 * 7 * 1000L; // 7일
+    public static final long REFRESH_TOKEN_TIME = 60 * 60 * 24 * 7 * 1000L; // 7일
     public static final String AUTHORIZATION_HEADER = "Authorization";
     public static final String AUTHORIZATION_KEY = "auth";
     public static final String BEARER_PREFIX = "Bearer ";
