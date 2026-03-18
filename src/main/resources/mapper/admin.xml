@@ -1,0 +1,16 @@
+<mapper namespace="com.parkvina.fakejumping.mapper.AdminMapper">
+
+    <select id="findByUsername" resultType="com.parkvina.fakejumping.entity.Admin">
+        SELECT
+        id,
+        username,
+        password,
+        role,
+        store_id AS storeId,
+        is_active AS isActive,
+        must_change AS mustChangePassword
+        FROM admin
+        WHERE username = #{username}
+    </select>
+
+</mapper>

@@ -1,84 +1,31 @@
-# Device API 문서
+# Auth api문서
 
 ---
 
-## 1. 매치 기록 저장
+## 1. 최초 로그인
+### POST /auth/sign-in
+권한: PUBLIC (인증 불필요)
 
-### POST /api/device/matches
+설명:
+관리자(admin)가 username과 password를 이용하여 로그인한다.
+로그인 성공 시 Access Token을 Response Body로 반환하고, Refresh Token을 HttpOnly Cookie로 발급한다.
 
-권한: DEVICE (deviceKey 기반 인증)
-
-설명:  
-게임 디바이스가 매치 결과를 서버로 전송한다.  
-서버는 X-Device-Key 헤더를 통해 디바이스를 식별한다.  
-디바이스에 설정된 size 값을 기준으로 활성 맵을 자동 매핑한다.  
-플레이어가 존재하지 않을 경우 자동 생성한다.  
-현재 활성 시즌이 존재할 경우 자동으로 시즌을 매핑한다.
+또한 계정이 최초 로그인 상태 (must_change_password=true) 인 경우
+비밀번호 변경이 필요함을 응답으로 전달한다.
 
 ---
-
-### Request Headers
-
-Content-Type: application/json  
-X-Device-Key: {deviceKey}
-
----
-
 ### Request Body
-
 ```json
 {
-  "playerNickname": "점프왕",
-  "difficulty": "HARD",
-  "score": 3200,
-  "playedAt": "2026-02-25T14:30:00"
+  "username": "store_admin",
+  "password": "password123"
 }
 ```
-
 ---
-
-### 처리 로직
-
-1. X-Device-Key로 디바이스 조회
-2. 디바이스가 활성 상태인지 확인 (isActive = true)
-3. 디바이스의 size 값 확인
-4. 해당 size에 해당하는 활성 맵 조회 (isActive = true)
-5. playerNickname으로 플레이어 조회 (없으면 생성)
-6. 현재 ACTIVE 시즌 조회 (없으면 season_id는 NULL)
-7. match_log 저장
-
----
-
-### Response
-
-#### 201 Created
+### Response Body
 
 ```json
-{
-  "matchId": 100,
-  "storeId": 1,
-  "deviceId": 5,
-  "playerId": 25,
-  "mapId": 2,
-  "difficulty": "HARD",
-  "score": 3200,
-  "seasonId": 3,
-  "createdAt": "2026-02-25T14:30:00"
+{"access-token": "어세스토큰",
+  "mustChangePassword": true
 }
 ```
-
----
-
-### 예외 상황
-
-#### 400 Bad Request
-- 필수 값 누락
-- difficulty 값이 유효하지 않음
-
-#### 401 Unauthorized
-- X-Device-Key 없음
-- 유효하지 않은 deviceKey
-- 비활성화된 디바이스
-
-#### 404 Not Found
-- 해당 size에 활성 맵이 존재하지 않음
