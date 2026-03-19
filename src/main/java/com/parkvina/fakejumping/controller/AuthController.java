@@ -5,7 +5,6 @@ import com.parkvina.fakejumping.dto.LoginResponse;
 import com.parkvina.fakejumping.dto.TokenResult;
 import com.parkvina.fakejumping.security.AuthService;
 import com.parkvina.fakejumping.service.JwtUtils;
-import io.jsonwebtoken.Jwt;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
