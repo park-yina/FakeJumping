@@ -64,5 +64,3 @@ jobs:
               -e JASYPT_PASSWORD=${{ secrets.JASYPT_PASSWORD }} \
               -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
               parkyina/fakejumping:latest
-    - name: Generate and submit dependency graph
-      uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
