@@ -25,7 +25,7 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
     private final String[] allowedUrls =
-            { "/", "/auth/sign-in","/sign-inView" };
+            { "/", "/auth/sign-in","/sign-inView" ,"/admin/dashboard"};
     private final JwtUtils jwtUtils;
     private String[] anyRoles = Arrays.stream(AdminRole.values())
             .map(Enum::name)

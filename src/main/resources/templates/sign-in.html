@@ -121,13 +121,15 @@
                     password:password
                 })
             });
+            if (!response.ok) {
+                throw new Error("로그인 실패");
+            }
 
             const data = await response.json();
 
             if(response.ok){
-
+                localStorage.setItem("role",data.role);
                 localStorage.setItem("accessToken", data.accessToken);
-
                 // SUPER ADMIN 알림
                 if(data.role === "SUPER_ADMIN"){
 

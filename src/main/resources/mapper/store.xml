@@ -1,0 +1,13 @@
+<mapper namespace="com.parkvina.fakejumping.mapper.StoreMapper">
+
+    <insert id="insertStore"
+            parameterType="com.parkvina.fakejumping.entity.Store"
+            useGeneratedKeys="true"
+            keyProperty="id">
+
+        INSERT INTO store (name)
+        VALUES (#{name})
+
+    </insert>
+
+</mapper>

@@ -1,8 +1,10 @@
 package com.parkvina.fakejumping.controller;
 
+import com.parkvina.fakejumping.dto.AdminInfoResponse;
 import com.parkvina.fakejumping.dto.LoginRequest;
 import com.parkvina.fakejumping.dto.LoginResponse;
 import com.parkvina.fakejumping.dto.TokenResult;
+import com.parkvina.fakejumping.enums.AdminRole;
 import com.parkvina.fakejumping.security.AuthService;
 import com.parkvina.fakejumping.service.JwtUtils;
 import jakarta.servlet.http.Cookie;
@@ -11,10 +13,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -22,7 +22,22 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final AuthService authService;
     private final JwtUtils jwtUtils;
+    @GetMapping("/me")
+    public ResponseEntity<AdminInfoResponse> me(Authentication authentication) {
 
+        String username = authentication.getName();
+
+        String role = authentication.getAuthorities()
+                .iterator()
+                .next()
+                .getAuthority(); // ROLE_SUPER_ADMIN
+
+        AdminRole adminRole = AdminRole.valueOf(role.replace("ROLE_", ""));
+
+        return ResponseEntity.ok(
+                new AdminInfoResponse(username, adminRole)
+        );
+    }
     @PostMapping("/sign-in")
     public ResponseEntity<LoginResponse> signIn(@RequestBody LoginRequest request, HttpServletResponse response) {
         TokenResult tokenResult = authService.signIn(request);

@@ -13,4 +13,28 @@
         WHERE username = #{username}
     </select>
 
+    <insert id="insertAdmin"
+            parameterType="com.parkvina.fakejumping.entity.Admin"
+            useGeneratedKeys="true"
+            keyProperty="id">
+
+        INSERT INTO admin (
+        username,
+        password,
+        role,
+        store_id,
+        is_active,
+        must_change_password
+        )
+        VALUES (
+        #{username},
+        #{password},
+        #{role},
+        #{storeId},
+        #{isActive},
+        #{mustChangePassword}
+        )
+
+    </insert>
+
 </mapper>
