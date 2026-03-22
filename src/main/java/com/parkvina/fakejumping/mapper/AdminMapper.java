@@ -19,4 +19,5 @@ public interface AdminMapper {
                     WHERE id = #{id}
             """)
     Admin findById(Long id);
+    void insertAdmin(Admin admin);
 }

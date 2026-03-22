@@ -1,5 +1,6 @@
 package com.parkvina.fakejumping.security;
 
+import com.parkvina.fakejumping.controller.CustomException;
 import com.parkvina.fakejumping.dto.LoginRequest;
 import com.parkvina.fakejumping.dto.LoginResponse;
 import com.parkvina.fakejumping.dto.TokenResult;
@@ -10,6 +11,7 @@ import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.TokenMapper;
 import com.parkvina.fakejumping.service.JwtUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,10 +68,10 @@ public class AuthService {
 
         AdminRefreshToken stored = tokenMapper.findByAdminId(adminId);
         if (refreshToken == null || !jwtUtils.isValidToken(refreshToken)) {
-            throw new RuntimeException("Refresh Token 이 유효하지 않습니다.");
+            throw new CustomException("Refresh Token이 유효하지 않습니다.", HttpStatus.UNAUTHORIZED);
         }
         if (!refreshToken.equals(stored.getRefreshToken())) {
-            throw new RuntimeException("토큰 불일치");
+            throw new CustomException("인증에 실패했습니다.", HttpStatus.UNAUTHORIZED);
         }
         String newRefreshToken = rotateRefreshToken(refreshToken);
         String username = jwtUtils.getUsername(newRefreshToken);
