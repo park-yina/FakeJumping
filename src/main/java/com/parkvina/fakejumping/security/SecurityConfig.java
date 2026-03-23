@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -20,19 +21,17 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
-
+@RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
     private final String[] allowedUrls =
             { "/", "/auth/sign-in","/sign-inView" ,"/admin/dashboard"};
     private final JwtUtils jwtUtils;
+    private final LogoutHandlerImpl logoutHandler;
     private String[] anyRoles = Arrays.stream(AdminRole.values())
             .map(Enum::name)
             .toArray(String[]::new);
-    public SecurityConfig(JwtUtils jwtUtils) {
-        this.jwtUtils = jwtUtils;
-    }
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -50,6 +49,10 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**","/change-password").hasAnyRole(anyRoles)
                         .requestMatchers("/api/stores/**","/api/seasons","/api/admins/store","/reset/password").hasRole("SUPER_ADMIN")
                         .anyRequest().authenticated()
+                )
+                .logout(logout -> logout.logoutUrl("/api/auth/sign-out")
+                        .addLogoutHandler(logoutHandler)
+                        .logoutSuccessHandler((request, response, authentication) -> SecurityContextHolder.clearContext())
                 )
 
                 .addFilterBefore(

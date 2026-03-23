@@ -33,5 +33,14 @@ ON DUPLICATE KEY UPDATE
             @Param("refreshToken") String refreshToken,
             @Param("expiresAt") LocalDateTime expiresAt
     );
+    @Delete(
+            """
+DELETE FROM admin_refresh_token
+WHERE admin_id=#{adminId}
+"""
+    )
+    void deleteRefreshToken(
+            @Param("adminId")Long adminId
+    );
 
 }
