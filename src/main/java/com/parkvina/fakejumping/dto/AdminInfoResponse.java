@@ -8,5 +8,5 @@ import lombok.Getter;
 @AllArgsConstructor
 public class AdminInfoResponse {
     private String username;
-    private AdminRole adminRole;
+    private AdminRole role;
 }
