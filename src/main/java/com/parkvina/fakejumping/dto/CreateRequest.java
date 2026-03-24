@@ -6,4 +6,6 @@ import lombok.Data;
 @Data
 public class CreateRequest {
     private String storeName;
+    private String region;
+    private String address;
 }

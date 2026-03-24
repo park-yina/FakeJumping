@@ -9,22 +9,23 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class AdminController {
     //private final AuthService authService;
     private final StoreService storeService;
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    //@PreAuthorize("hasRole('SUPER_ADMIN')")
 
     @PostMapping("/stores")
     public ResponseEntity<CreateResult>makeStore(@RequestBody CreateRequest createRequest){
-
+        System.out.println("🔥 controller 진입");
         CreateResult createResult=storeService.createStore(createRequest);
         return ResponseEntity
                 .status(HttpStatus.CREATED)

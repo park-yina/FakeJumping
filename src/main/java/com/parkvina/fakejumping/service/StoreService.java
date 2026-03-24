@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -53,16 +54,34 @@ public class StoreService {
     }
     @Transactional
     public CreateResult createStore(CreateRequest createRequest) {
+
         if (storeMapper.findByName(createRequest.getStoreName()) != null) {
             throw new CustomException("중복되는 지점명입니다.", HttpStatus.CONFLICT);
         }
-        Store store=new Store();
+
         String username = generateUsername(createRequest.getStoreName());
         String tempPassword = generateTempPassword(8);
+//        private String storeName;
+//        private String region;
+//        private String address;
+        Store store = new Store();
         store.setName(createRequest.getStoreName());
-        Long storeId= store.getId();
-        storeMapper.insertStore(store);
-        Admin admin=new Admin();
+        store.setRegion(createRequest.getRegion());
+        store.setAddress(createRequest.getAddress());
+        store.setIsActive(true);
+        try {
+            storeMapper.insertStore(store);
+        } catch (Exception e) {
+            System.out.println("🔥 INSERT ERROR 발생");
+            e.printStackTrace(); // ⭐ 이거 꼭
+            throw e;
+        }
+
+        // ✅ insert 이후 ID 확보
+        Long storeId = store.getId();
+        System.out.println("storeId = " + store.getId());
+
+        Admin admin = new Admin();
         admin.setUsername(username);
         admin.setPassword(passwordEncoder.encode(tempPassword));
         admin.setRole(AdminRole.STORE_ADMIN);
@@ -71,8 +90,20 @@ public class StoreService {
         admin.setMustChangePassword(true);
 
         adminMapper.insertAdmin(admin);
+
         return new CreateResult(
-                storeId, createRequest.getStoreName(), username,tempPassword
+                storeId,
+                createRequest.getStoreName(),
+                username,
+                tempPassword,
+                createRequest.getRegion(),
+                createRequest.getAddress()
         );
+    }
+    public List<Store>readActiveStore(){
+        return storeMapper.selectActiveStore();
+    }
+    public int countActiveStore(){
+        return storeMapper.countActiveStore();
     }
 }
