@@ -10,5 +10,7 @@ public class CreateResult {
     private String storeName;
     private String username;
     private String tempPassword;
+    private String region;
+    private String address;
 
 }

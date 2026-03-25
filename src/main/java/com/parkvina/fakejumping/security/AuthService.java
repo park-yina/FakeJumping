@@ -1,6 +1,7 @@
 package com.parkvina.fakejumping.security;
 
 import com.parkvina.fakejumping.controller.CustomException;
+import com.parkvina.fakejumping.dto.ChangePasswordRequest;
 import com.parkvina.fakejumping.dto.LoginRequest;
 import com.parkvina.fakejumping.dto.LoginResponse;
 import com.parkvina.fakejumping.dto.TokenResult;
@@ -26,50 +27,107 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final TokenMapper tokenMapper;
     @Transactional
-    public TokenResult signIn(LoginRequest request) {
+    public void changePassword(Long adminId, ChangePasswordRequest req) {
 
-        Admin admin = adminMapper.findByUsername(request.getUsername());
+        Admin admin = adminMapper.findById(adminId);
 
-        if (admin == null || !passwordEncoder.matches(request.getPassword(), admin.getPassword())) {
-            throw new IllegalArgumentException("Invalid username or password");
+        if (admin == null) {
+            throw new RuntimeException("존재하지 않는 관리자입니다.");
+        }
+        Admin exist = adminMapper.findByUsername(req.getNewUsername());
+        if (exist != null && !exist.getId().equals(adminId)) {
+            throw new RuntimeException("이미 존재하는 아이디입니다.");
         }
 
-        String accessToken = jwtUtils.createToken(
-                admin.getId(),
-                admin.getUsername(),
-                admin.getRole()
-        );
+        // 🔥 비밀번호 암호화
+        String encoded = passwordEncoder.encode(req.getNewPassword());
 
-        String refreshToken = jwtUtils.createRefreshToken(
-                admin.getId(),
-                admin.getUsername(),
-                admin.getRole()
-        );
+        admin.setUsername(req.getNewUsername());
+        admin.setPassword(encoded);
+        admin.setMustChangePassword(false);
 
-        tokenMapper.upsertRefreshToken(
-                admin.getId(),
-                refreshToken,
-                LocalDateTime.now().plusDays(7)
-        );
+        adminMapper.updateAdminCredentials(admin);
+    }@Transactional
+    public TokenResult signIn(LoginRequest request) {
 
-        LoginResponse response = new LoginResponse(
-                accessToken,
-                admin.getId(),
-                admin.getUsername(),
-                admin.getRole(),
-                Boolean.TRUE.equals(admin.getMustChangePassword())
-        );
+        System.out.println("🔥 [SIGN-IN] 요청 시작");
 
-        return new TokenResult(response, refreshToken);
+        try {
+            Admin admin = adminMapper.findByUsername(request.getUsername());
+
+            System.out.println("DB 조회 결과: " + admin);
+
+            if (admin == null) {
+                System.out.println("사용자 없음");
+                throw new IllegalArgumentException("Invalid username or password");
+            }
+
+            if (admin.getPassword() == null) {
+                System.out.println("❌ DB 비밀번호 null");
+                throw new RuntimeException("DB에 비밀번호가 없음");
+            }
+
+            boolean match = passwordEncoder.matches(request.getPassword(), admin.getPassword());
+            System.out.println("👉 password match 결과: " + match);
+
+            if (!match) {
+                System.out.println("❌ 비밀번호 불일치");
+                throw new IllegalArgumentException("Invalid username or password");
+            }
+
+            System.out.println("✅ 로그인 검증 통과");
+
+            String accessToken = jwtUtils.createToken(
+                    admin.getId(),
+                    admin.getUsername(),
+                    admin.getRole()
+            );
+
+            System.out.println("👉 accessToken 생성 완료");
+
+            String refreshToken = jwtUtils.createRefreshToken(
+                    admin.getId(),
+                    admin.getUsername(),
+                    admin.getRole()
+            );
+
+            System.out.println("👉 refreshToken 생성 완료");
+
+            tokenMapper.upsertRefreshToken(
+                    admin.getId(),
+                    refreshToken,
+                    LocalDateTime.now().plusDays(7)
+            );
+
+            System.out.println("👉 refreshToken DB 저장 완료");
+
+            LoginResponse response = new LoginResponse(
+                    accessToken,
+                    admin.getId(),
+                    admin.getUsername(),
+                    admin.getRole(),
+                    admin.getMustChangePassword()
+            );
+
+            System.out.println("🔥 [SIGN-IN] 정상 종료");
+
+            return new TokenResult(response, refreshToken);
+
+        } catch (Exception e) {
+            System.out.println("🔥 [SIGN-IN ERROR] 발생");
+            e.printStackTrace(); // 🔥 핵심 (이거로 원인 바로 잡힘)
+            throw e;
+        }
     }
     @Transactional
     public TokenResult reissueToken(String refreshToken){
-        Long adminId = jwtUtils.getAdminId(refreshToken);
-
-        AdminRefreshToken stored = tokenMapper.findByAdminId(adminId);
         if (refreshToken == null || !jwtUtils.isValidToken(refreshToken)) {
             throw new CustomException("Refresh Token이 유효하지 않습니다.", HttpStatus.UNAUTHORIZED);
         }
+        Long adminId = jwtUtils.getAdminId(refreshToken);
+        AdminRefreshToken stored = tokenMapper.findByAdminId(adminId);
+
+
         if (!refreshToken.equals(stored.getRefreshToken())) {
             throw new CustomException("인증에 실패했습니다.", HttpStatus.UNAUTHORIZED);
         }
@@ -85,7 +143,7 @@ public class AuthService {
                 role,
                 Boolean.TRUE.equals(admin.getMustChangePassword())
         );
-        return new TokenResult(response, refreshToken);
+        return new TokenResult(response, newRefreshToken);
 
     }
     public String rotateRefreshToken(String refreshToken){

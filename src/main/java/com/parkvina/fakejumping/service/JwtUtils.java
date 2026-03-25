@@ -101,13 +101,21 @@ public class JwtUtils {
         return null;
     }
     public Authentication getAuthentication(String token) {
+
         Claims claims = getClaimsFromToken(token);
-        String username = claims.getSubject();
-        String role=claims.get(AUTHORIZATION_KEY,String.class);
+
+        Long adminId = claims.get("adminId", Long.class);
+
+        String role = claims.get(AUTHORIZATION_KEY, String.class);
+
         List<SimpleGrantedAuthority> authorities =
                 List.of(new SimpleGrantedAuthority("ROLE_" + role));
-        return  new UsernamePasswordAuthenticationToken(username, null, authorities);
 
+        return new UsernamePasswordAuthenticationToken(
+                adminId,
+                null,
+                authorities
+        );
     }
 
         private Claims getClaimsFromToken(String token) {

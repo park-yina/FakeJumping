@@ -3,9 +3,12 @@ package com.parkvina.fakejumping.security;
 
 import com.parkvina.fakejumping.enums.AdminRole;
 import com.parkvina.fakejumping.service.JwtUtils;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -24,14 +27,20 @@ import java.util.List;
 @RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
     private final String[] allowedUrls =
-            { "/", "/auth/sign-in","/sign-inView" ,"/admin/dashboard"};
+            { "/", "/auth/sign-in","/sign-inView" ,"/admin/dashboard","/change-password"   // 🔥 추가
+            };
     private final JwtUtils jwtUtils;
     private final LogoutHandlerImpl logoutHandler;
     private String[] anyRoles = Arrays.stream(AdminRole.values())
             .map(Enum::name)
             .toArray(String[]::new);
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(jwtUtils);
+    }
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -43,11 +52,27 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                .securityContext(securityContext ->
+                        securityContext.requireExplicitSave(false)
+                )
+
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            System.out.println("🔥 인증 실패: " + authException.getMessage());
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            System.out.println("🔥 권한 없음: " + accessDeniedException.getMessage());
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        })
+                )
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(allowedUrls).permitAll()
-                        .requestMatchers("/admin/**","/change-password").hasAnyRole(anyRoles)
-                        .requestMatchers("/api/stores/**","/api/seasons","/api/admins/store","/reset/password").hasRole("SUPER_ADMIN")
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        .requestMatchers("/auth/me","/auth/change-password","/api/stores/**").authenticated()
+                        .requestMatchers("/api/**").hasAnyRole(anyRoles)
                         .anyRequest().authenticated()
                 )
                 .logout(logout -> logout.logoutUrl("/api/auth/sign-out")
@@ -56,12 +81,13 @@ public class SecurityConfig {
                 )
 
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(jwtUtils),
+                        jwtAuthenticationFilter(),
                         UsernamePasswordAuthenticationFilter.class
                 );
 
         return http.build();
     }
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

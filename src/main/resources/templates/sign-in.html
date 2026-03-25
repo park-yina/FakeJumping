@@ -70,12 +70,22 @@
 
                         <div class="mb-3">
                             <label class="form-label">비밀번호</label>
+
                             <input
                                     type="password"
                                     class="form-control"
                                     id="password"
                                     placeholder="비밀번호 입력"
-                                    required>
+                                    required
+                                    autocomplete="current-password"
+                            >
+
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="showPassword">
+                                <label class="form-check-label" for="showPassword">
+                                    비밀번호 보기
+                                </label>
+                            </div>
                         </div>
 
                         <div class="d-grid">
@@ -101,7 +111,15 @@
 </div>
 
 <script>
+    document.getElementById("showPassword").addEventListener("change", function () {
+        const passwordInput = document.getElementById("password");
 
+        if (this.checked) {
+            passwordInput.type = "text";
+        } else {
+            passwordInput.type = "password";
+        }
+    });
     document.getElementById("loginForm").addEventListener("submit", async function(e){
 
         e.preventDefault();
@@ -113,24 +131,24 @@
 
             const response = await fetch("/auth/sign-in",{
                 method:"POST",
-                headers:{
-                    "Content-Type":"application/json"
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json"
                 },
                 body:JSON.stringify({
                     username:username,
                     password:password
                 })
+
             });
             if (!response.ok) {
                 throw new Error("로그인 실패");
             }
 
             const data = await response.json();
-
             if(response.ok){
                 localStorage.setItem("role",data.role);
                 localStorage.setItem("accessToken", data.accessToken);
-                // SUPER ADMIN 알림
                 if(data.role === "SUPER_ADMIN"){
 
                     await Swal.fire({
@@ -141,7 +159,6 @@
                     });
 
                 }
-
                 if(data.mustChangePassword){
                     window.location.href="/change-password";
                 }else{

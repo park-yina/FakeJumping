@@ -9,5 +9,9 @@ public class PageController {
     public String signInPage() {
         return "sign-in";
     }
+    @GetMapping("/change-password")
+    public String changePasswordPage(){
+        return "change-password";
+    }
 }
 

@@ -5,6 +5,8 @@ import com.parkvina.fakejumping.entity.Store;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 @Mapper
 public interface StoreMapper {
     @Select(
@@ -23,4 +25,7 @@ WHERE name=#{name}
 """)
     Store findByName(String name);
     void insertStore(Store store);
+    List<Store> selectActiveStore();
+    int countActiveStore();
+
 }

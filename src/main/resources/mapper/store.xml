@@ -1,3 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.parkvina.fakejumping.mapper.StoreMapper">
 
     <insert id="insertStore"
@@ -5,9 +9,22 @@
             useGeneratedKeys="true"
             keyProperty="id">
 
-        INSERT INTO store (name)
-        VALUES (#{name})
+        INSERT INTO store (name, region, address,is_active)
+        VALUES (#{name}, #{region}, #{address},#{isActive})
 
     </insert>
+    <select id="selectActiveStore"
+            resultType="com.parkvina.fakejumping.entity.Store"
+    >
+        SELECT *
+        FROM store
+        WHERE is_active = 1
+
+    </select>
+    <select id="countActiveStore" resultType="int">
+        SELECT COUNT(*)
+        FROM store
+        WHERE is_active = 1
+    </select>
 
 </mapper>

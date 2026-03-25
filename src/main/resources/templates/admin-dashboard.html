@@ -9,6 +9,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -158,7 +159,7 @@
 </div>
 
 <script>
-
+    let tempData = [];
     function setActive(el) {
         document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
         el.classList.add('active');
@@ -168,32 +169,58 @@
 
         if (page === 'home') renderHome();
         if (page === 'create-store') renderCreateStore();
-        if (page === 'store-list') renderTemp();
+        if (page === 'store-list') renderTest();
         if (page === 'temp') renderTemp();
     }
 
     async function checkLogin() {
-        const token = localStorage.getItem("accessToken");
+        let token = localStorage.getItem("accessToken");
+
         if (!token) {
             location.href = "/sign-inView";
             return;
         }
 
-        const res = await fetch("/auth/me", {
-            headers: { Authorization: "Bearer " + token }
+        let res = await fetch("/auth/me", {
+            headers: { Authorization: "Bearer " + token },
+            credentials: "include"
         });
 
-        if (!res.ok) {
-            localStorage.clear();
-            location.href = "/sign-inView";
-            return;
+        if (res.status === 401) {
+
+            // refresh 시도
+            const refreshRes = await fetch("/auth/refresh", {
+                method: "POST",
+                credentials: "include"
+            });
+
+            if (!refreshRes.ok) {
+                localStorage.clear();
+                location.href = "/sign-inView";
+                return;
+            }
+
+            const newData = await refreshRes.json();
+            localStorage.setItem("accessToken", newData.accessToken);
+
+            // 🔥 다시 요청
+            res = await fetch("/auth/me", {
+                headers: { Authorization: "Bearer " + newData.accessToken },
+                credentials: "include"
+            });
         }
 
         const data = await res.json();
+        if (data.mustChangePassword === true) {
+            if (window.location.pathname !== "/change-password") {
+                window.location.href = "/change-password";
+            }
+            return;
+        }
+
         localStorage.setItem("role", data.role);
         applyRole(data.role);
     }
-
     function applyRole() {
         const role = localStorage.getItem("role");
         const logo = document.getElementById("logo-text");
@@ -216,50 +243,181 @@
     }
 
     init();
-
-    function renderHome() {
+    async function renderHome() {
         document.getElementById("page-title").textContent = "대시보드";
-        document.getElementById("main-content").innerHTML = `
-            <div class="card">환영합니다 👋</div>
-        `;
-    }
 
+        const role = localStorage.getItem("role");
+
+        // ✅ STORE_ADMIN이면 다른 화면
+        if (role === "STORE_ADMIN") {
+            document.getElementById("main-content").innerHTML = `
+            <div class="card">
+                <h3>🏪 ${localStorage.getItem("username") || "매장"}님 환영합니다</h3>
+                <p class="text-gray-500">매장 관리 페이지입니다.</p>
+            </div>
+        `;
+            return;
+        }
+
+        // ✅ SUPER_ADMIN만 API 호출
+        try {
+            const res = await fetch("/api/admin/temp/count", {
+                headers: {
+                    Authorization: "Bearer " + localStorage.getItem("accessToken")
+                }
+            });
+
+            if (!res.ok) {
+                const text = await res.text();
+                console.error("에러:", text);
+                throw new Error("API 실패");
+            }
+
+            const count = await res.json();
+
+            document.getElementById("main-content").innerHTML = `
+            <div class="card" style="cursor:pointer"
+                 onclick="navigate('temp',this)">
+
+                <h3>👤 임시 관리자</h3>
+                <p style="font-size:24px; margin-top:10px;">
+                    ${count}명
+                </p>
+                <p class="text-gray-500">클릭하면 상세 보기</p>
+
+            </div>
+        `;
+        } catch (e) {
+            console.error(e);
+            document.getElementById("main-content").innerHTML = `
+            <div class="card">
+                <h3>⚠️ 데이터 불러오기 실패</h3>
+            </div>
+        `;
+        }
+    }
     function renderCreateStore() {
         document.getElementById("page-title").textContent = "스토어 생성";
 
         document.getElementById("main-content").innerHTML = `
-            <div class="card">
-                <input id="storeName" placeholder="스토어 이름">
-                <br><br>
-                <button class="btn btn-primary" onclick="createStore()">생성</button>
+        <div class="card p-6 max-w-2xl mx-auto">
+
+            <h2 class="text-xl font-semibold mb-6">새 매장 등록</h2>
+
+            <!-- 스토어 이름 -->
+            <div class="mb-4">
+                <label class="block text-sm mb-1 text-gray-400">스토어 이름</label>
+                <input id="storeName"
+                       class="w-full p-3 rounded-lg bg-gray-900 border border-gray-700 focus:outline-none focus:border-blue-500"
+                       placeholder="예: 강남점">
             </div>
-        `;
+
+            <!-- 주소 -->
+            <div class="mb-4">
+                <label class="block text-sm mb-1 text-gray-400">주소</label>
+                <div class="flex gap-2">
+                    <input id="address"
+                           class="flex-1 p-3 rounded-lg bg-gray-900 border border-gray-700"
+                           placeholder="주소 검색 버튼을 눌러주세요"
+                           readonly onclick="searchAddress()">
+                    <button onclick="searchAddress()"
+                            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg">
+                        검색
+                    </button>
+                </div>
+            </div>
+
+            <!-- 지역 -->
+            <div class="mb-6">
+                <label class="block text-sm mb-1 text-gray-400">지역</label>
+                <input id="region"
+                       class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-400"
+                       readonly>
+            </div>
+
+            <!-- 버튼 영역 -->
+            <div class="flex justify-end gap-2">
+                <button onclick="goHome()"
+                        class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg">
+                    취소
+                </button>
+                <button class="px-5 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold"
+                        onclick="createStore()">
+                    생성
+                </button>
+            </div>
+
+        </div>
+    `;
     }
+    function searchAddress() {
+        new daum.Postcode({
+            oncomplete: function(data) {
 
+                // 전체 주소
+                document.getElementById("address").value = data.address;
+
+                // region (시/도)
+                document.getElementById("region").value = data.sido;
+            }
+        }).open();
+    }
     async function createStore() {
-        const name = document.getElementById("storeName").value;
+        const storeName = document.getElementById("storeName").value;
+        const address = document.getElementById("address").value;
+        const region = document.getElementById("region").value;
 
-        if (!name) {
-            Swal.fire("이름 입력하세요");
+        if (!storeName) {
+            Swal.fire("스토어 명을 입력하세요");
             return;
         }
 
-        const res = await fetch("/admin/stores", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + localStorage.getItem("accessToken")
-            },
-            body: JSON.stringify({ name })
-        });
+        if (!address || !region) {
+            Swal.fire("주소를 선택하세요");
+            return;
+        }
 
-        const data = await res.json();
+        const requestData = {
+            storeName,
+            address,
+            region
+        };
 
-        Swal.fire("생성 완료", data.storeName);
+        try {
+            const res = await fetch("/api/stores", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + localStorage.getItem("accessToken")
+                },
+                body: JSON.stringify(requestData) // ✅ 여기 중요
+            });
+
+            if (!res.ok) {
+                throw new Error("서버 오류");
+            }
+
+            const data = await res.json();
+
+            Swal.fire({
+                title: "생성 완료 🎉",
+                html: `
+                <b>매장명:</b> ${data.storeName}<br>
+                <b>계정:</b> ${data.username}<br>
+                <b>임시 비밀번호:</b> ${data.tempPassword}
+            `,
+                icon: "success"
+            });
+
+            console.log(data);
+
+        } catch (e) {
+            console.error(e);
+            Swal.fire("에러 발생", "스토어 생성 실패", "error");
+        }
     }
-
-    async function renderTemp() {
-        document.getElementById("page-title").textContent = "임시 계정";
+    async function renderTest() {
+        document.getElementById("page-title").textContent = "테스트중";
 
         document.getElementById("main-content").innerHTML = `
         <div class="card flex flex-col items-center justify-center py-16 text-center">
@@ -269,7 +427,59 @@
         </div>
     `;
     }
+    async function renderTemp() {
+        document.getElementById("page-title").textContent = "임시 계정";
 
+        const res = await fetch("/api/admin/temp", {
+            headers: {
+                Authorization: "Bearer " + localStorage.getItem("accessToken")
+            }
+        });
+
+        tempData = await res.json();
+
+        renderTempList(tempData);
+    }
+    function renderTempList(data) {
+        let html = `
+        <div class="card">
+
+            <div style="margin-bottom:10px;">
+                <button class="btn btn-ghost" onclick="sortByDateDesc()">최신순</button>
+                <button class="btn btn-ghost" onclick="sortByDateAsc()">오래된순</button>
+                <button class="btn btn-ghost" onclick="sortByStore()">지점명순</button>
+            </div>
+    `;
+
+        data.forEach((d, i) => {
+            html += `
+            <div style="padding:10px; border-bottom:1px solid #333;">
+                <b>#${i + 1} ${d.username}</b> - ${d.storeName}
+                <div style="font-size:12px; color:#888;">
+                    생성일: ${d.createdAt}
+                </div>
+            </div>
+        `;
+        });
+
+        html += `</div>`;
+
+        document.getElementById("main-content").innerHTML = html;
+    }
+    function sortByDateDesc() {
+        tempData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        renderTempList(tempData);
+    }
+
+    function sortByDateAsc() {
+        tempData.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        renderTempList(tempData);
+    }
+
+    function sortByStore() {
+        tempData.sort((a, b) => a.storeName.localeCompare(b.storeName, 'ko'));
+        renderTempList(tempData);
+    }
     async function logout() {
         const token = localStorage.getItem("accessToken");
 

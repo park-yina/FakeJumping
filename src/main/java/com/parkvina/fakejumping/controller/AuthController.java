@@ -1,10 +1,9 @@
 package com.parkvina.fakejumping.controller;
 
-import com.parkvina.fakejumping.dto.AdminInfoResponse;
-import com.parkvina.fakejumping.dto.LoginRequest;
-import com.parkvina.fakejumping.dto.LoginResponse;
-import com.parkvina.fakejumping.dto.TokenResult;
+import com.parkvina.fakejumping.dto.*;
+import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.enums.AdminRole;
+import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.security.AuthService;
 import com.parkvina.fakejumping.service.JwtUtils;
 import jakarta.servlet.http.Cookie;
@@ -16,26 +15,32 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.awt.*;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
     private final JwtUtils jwtUtils;
+    private final AdminMapper adminMapper;
     @GetMapping("/me")
     public ResponseEntity<AdminInfoResponse> me(Authentication authentication) {
 
-        String username = authentication.getName();
+        Long adminId = (Long) authentication.getPrincipal();
 
-        String role = authentication.getAuthorities()
-                .iterator()
-                .next()
-                .getAuthority(); // ROLE_SUPER_ADMIN
+        Admin admin = adminMapper.findById(adminId);
 
-        AdminRole adminRole = AdminRole.valueOf(role.replace("ROLE_", ""));
+        if (admin == null) {
+            throw new RuntimeException("사용자를 찾을 수 없습니다.");
+        }
 
         return ResponseEntity.ok(
-                new AdminInfoResponse(username, adminRole)
+                new AdminInfoResponse(
+                        admin.getUsername(),
+                        admin.getRole(),
+                        admin.getMustChangePassword()
+                )
         );
     }
     @PostMapping("/sign-in")
@@ -43,8 +48,8 @@ public class AuthController {
         TokenResult tokenResult = authService.signIn(request);
 
 
-        Cookie cookie = getCookie(tokenResult.getRefreshToken());
-        response.addCookie(cookie);
+        String cookieHeader = buildRefreshTokenCookie(tokenResult.getRefreshToken());
+        response.setHeader("Set-Cookie", cookieHeader);
         return ResponseEntity.ok(tokenResult.getLoginResponse());
 
     }
@@ -55,20 +60,29 @@ public class AuthController {
         String refreshToken = jwtUtils.extractRefreshTokenFromCookie(request);
 
         TokenResult tokenResult = authService.reissueToken(refreshToken);
-        Cookie cookie = getCookie(tokenResult.getRefreshToken());
-
-        response.addCookie(cookie);
+        String cookieHeader = buildRefreshTokenCookie(tokenResult.getRefreshToken());
+        response.setHeader("Set-Cookie", cookieHeader);
 
         return ResponseEntity.ok(tokenResult.getLoginResponse());
     }
 
-    private static @NonNull Cookie getCookie(String refreshToken) {
-        Cookie cookie = new Cookie("refreshToken", refreshToken);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setSecure(true);
-        cookie.setMaxAge(60 * 60 * 24 * 7); // 7일
-        return cookie;
+    private String buildRefreshTokenCookie(String refreshToken) {
+        return "refreshToken=" + refreshToken +
+                "; Path=/" +
+                "; HttpOnly" +
+                "; SameSite=Lax" +   //CSRF 방어 (HTTP 환경)
+                "; Max-Age=" + (60 * 60 * 24 * 7);
     }
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @RequestBody ChangePasswordRequest req,
+            Authentication authentication
+    ) {
 
+        Long adminId = (Long) authentication.getPrincipal();
+        System.out.println("adminId: " + adminId);
+        authService.changePassword(adminId, req);
+
+        return ResponseEntity.ok().build();
+    }
 }

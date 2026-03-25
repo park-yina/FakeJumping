@@ -9,4 +9,5 @@ import lombok.Getter;
 public class AdminInfoResponse {
     private String username;
     private AdminRole role;
+    private Boolean mustChangePassword;
 }

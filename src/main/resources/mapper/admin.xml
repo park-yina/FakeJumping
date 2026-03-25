@@ -1,17 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.parkvina.fakejumping.mapper.AdminMapper">
 
-    <select id="findByUsername" resultType="com.parkvina.fakejumping.entity.Admin">
-        SELECT
-        id,
-        username,
-        password,
-        role,
-        store_id AS storeId,
-        is_active AS isActive,
-        must_change AS mustChangePassword
-        FROM admin
-        WHERE username = #{username}
-    </select>
 
 
     <insert id="insertAdmin"
@@ -37,4 +29,28 @@
         )
 
     </insert>
+    <select id="countTempAdmin" resultType="int">
+        SELECT COUNT(*)
+        FROM admin
+        WHERE is_active = 1
+          AND must_change_password = 1
+    </select>
+    <select id="selectTempAdminList" resultType="com.parkvina.fakejumping.dto.TempResponse">
+        SELECT
+            a.id,
+            a.username,
+            s.name AS storeName,
+            a.created_at AS createdAt
+        FROM admin a
+                 JOIN store s ON a.store_id = s.id
+        WHERE a.is_active = 1
+          AND a.must_change_password = 1
+    </select>
+    <update id="updateAdminCredentials">
+        UPDATE admin
+        SET username = #{username},
+            password = #{password},
+            must_change_password = false
+        WHERE id = #{id}
+    </update>
 </mapper>
