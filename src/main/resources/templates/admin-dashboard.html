@@ -159,7 +159,7 @@
 </div>
 
 <script>
-
+    let tempData = [];
     function setActive(el) {
         document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
         el.classList.add('active');
@@ -169,32 +169,58 @@
 
         if (page === 'home') renderHome();
         if (page === 'create-store') renderCreateStore();
-        if (page === 'store-list') renderTemp();
+        if (page === 'store-list') renderTest();
         if (page === 'temp') renderTemp();
     }
 
     async function checkLogin() {
-        const token = localStorage.getItem("accessToken");
+        let token = localStorage.getItem("accessToken");
+
         if (!token) {
             location.href = "/sign-inView";
             return;
         }
 
-        const res = await fetch("/auth/me", {
+        let res = await fetch("/auth/me", {
             headers: { Authorization: "Bearer " + token },
+            credentials: "include"
         });
 
-        if (!res.ok) {
-            localStorage.clear();
-            location.href = "/sign-inView";
-            return;
+        if (res.status === 401) {
+
+            // refresh 시도
+            const refreshRes = await fetch("/auth/refresh", {
+                method: "POST",
+                credentials: "include"
+            });
+
+            if (!refreshRes.ok) {
+                localStorage.clear();
+                location.href = "/sign-inView";
+                return;
+            }
+
+            const newData = await refreshRes.json();
+            localStorage.setItem("accessToken", newData.accessToken);
+
+            // 🔥 다시 요청
+            res = await fetch("/auth/me", {
+                headers: { Authorization: "Bearer " + newData.accessToken },
+                credentials: "include"
+            });
         }
 
         const data = await res.json();
+        if (data.mustChangePassword === true) {
+            if (window.location.pathname !== "/change-password") {
+                window.location.href = "/change-password";
+            }
+            return;
+        }
+
         localStorage.setItem("role", data.role);
         applyRole(data.role);
     }
-
     function applyRole() {
         const role = localStorage.getItem("role");
         const logo = document.getElementById("logo-text");
@@ -217,14 +243,59 @@
     }
 
     init();
-
-    function renderHome() {
+    async function renderHome() {
         document.getElementById("page-title").textContent = "대시보드";
-        document.getElementById("main-content").innerHTML = `
-            <div class="card">환영합니다 👋</div>
-        `;
-    }
 
+        const role = localStorage.getItem("role");
+
+        // ✅ STORE_ADMIN이면 다른 화면
+        if (role === "STORE_ADMIN") {
+            document.getElementById("main-content").innerHTML = `
+            <div class="card">
+                <h3>🏪 ${localStorage.getItem("username") || "매장"}님 환영합니다</h3>
+                <p class="text-gray-500">매장 관리 페이지입니다.</p>
+            </div>
+        `;
+            return;
+        }
+
+        // ✅ SUPER_ADMIN만 API 호출
+        try {
+            const res = await fetch("/api/admin/temp/count", {
+                headers: {
+                    Authorization: "Bearer " + localStorage.getItem("accessToken")
+                }
+            });
+
+            if (!res.ok) {
+                const text = await res.text();
+                console.error("에러:", text);
+                throw new Error("API 실패");
+            }
+
+            const count = await res.json();
+
+            document.getElementById("main-content").innerHTML = `
+            <div class="card" style="cursor:pointer"
+                 onclick="navigate('temp',this)">
+
+                <h3>👤 임시 관리자</h3>
+                <p style="font-size:24px; margin-top:10px;">
+                    ${count}명
+                </p>
+                <p class="text-gray-500">클릭하면 상세 보기</p>
+
+            </div>
+        `;
+        } catch (e) {
+            console.error(e);
+            document.getElementById("main-content").innerHTML = `
+            <div class="card">
+                <h3>⚠️ 데이터 불러오기 실패</h3>
+            </div>
+        `;
+        }
+    }
     function renderCreateStore() {
         document.getElementById("page-title").textContent = "스토어 생성";
 
@@ -345,8 +416,8 @@
             Swal.fire("에러 발생", "스토어 생성 실패", "error");
         }
     }
-    async function renderTemp() {
-        document.getElementById("page-title").textContent = "임시 계정";
+    async function renderTest() {
+        document.getElementById("page-title").textContent = "테스트중";
 
         document.getElementById("main-content").innerHTML = `
         <div class="card flex flex-col items-center justify-center py-16 text-center">
@@ -356,7 +427,59 @@
         </div>
     `;
     }
+    async function renderTemp() {
+        document.getElementById("page-title").textContent = "임시 계정";
 
+        const res = await fetch("/api/admin/temp", {
+            headers: {
+                Authorization: "Bearer " + localStorage.getItem("accessToken")
+            }
+        });
+
+        tempData = await res.json();
+
+        renderTempList(tempData);
+    }
+    function renderTempList(data) {
+        let html = `
+        <div class="card">
+
+            <div style="margin-bottom:10px;">
+                <button class="btn btn-ghost" onclick="sortByDateDesc()">최신순</button>
+                <button class="btn btn-ghost" onclick="sortByDateAsc()">오래된순</button>
+                <button class="btn btn-ghost" onclick="sortByStore()">지점명순</button>
+            </div>
+    `;
+
+        data.forEach((d, i) => {
+            html += `
+            <div style="padding:10px; border-bottom:1px solid #333;">
+                <b>#${i + 1} ${d.username}</b> - ${d.storeName}
+                <div style="font-size:12px; color:#888;">
+                    생성일: ${d.createdAt}
+                </div>
+            </div>
+        `;
+        });
+
+        html += `</div>`;
+
+        document.getElementById("main-content").innerHTML = html;
+    }
+    function sortByDateDesc() {
+        tempData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        renderTempList(tempData);
+    }
+
+    function sortByDateAsc() {
+        tempData.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        renderTempList(tempData);
+    }
+
+    function sortByStore() {
+        tempData.sort((a, b) => a.storeName.localeCompare(b.storeName, 'ko'));
+        renderTempList(tempData);
+    }
     async function logout() {
         const token = localStorage.getItem("accessToken");
 

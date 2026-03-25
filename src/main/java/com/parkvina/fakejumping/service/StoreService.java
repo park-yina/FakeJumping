@@ -3,6 +3,7 @@ package com.parkvina.fakejumping.service;
 import com.parkvina.fakejumping.controller.CustomException;
 import com.parkvina.fakejumping.dto.CreateRequest;
 import com.parkvina.fakejumping.dto.CreateResult;
+import com.parkvina.fakejumping.dto.TempResponse;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.enums.AdminRole;
@@ -61,9 +62,6 @@ public class StoreService {
 
         String username = generateUsername(createRequest.getStoreName());
         String tempPassword = generateTempPassword(8);
-//        private String storeName;
-//        private String region;
-//        private String address;
         Store store = new Store();
         store.setName(createRequest.getStoreName());
         store.setRegion(createRequest.getRegion());
@@ -72,8 +70,8 @@ public class StoreService {
         try {
             storeMapper.insertStore(store);
         } catch (Exception e) {
-            System.out.println("🔥 INSERT ERROR 발생");
-            e.printStackTrace(); // ⭐ 이거 꼭
+            System.out.println("INSERT ERROR 발생");
+            e.printStackTrace();
             throw e;
         }
 
@@ -99,6 +97,9 @@ public class StoreService {
                 createRequest.getRegion(),
                 createRequest.getAddress()
         );
+    }
+    public List<TempResponse> tempAdminList() {
+        return adminMapper.selectTempAdminList();
     }
     public List<Store>readActiveStore(){
         return storeMapper.selectActiveStore();
