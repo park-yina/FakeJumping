@@ -1,16 +1,14 @@
 package com.parkvina.fakejumping.service;
 
 import com.parkvina.fakejumping.controller.CustomException;
-import com.parkvina.fakejumping.dto.CreateRequest;
-import com.parkvina.fakejumping.dto.CreateResult;
-import com.parkvina.fakejumping.dto.ResetPasswordResult;
-import com.parkvina.fakejumping.dto.TempResponse;
+import com.parkvina.fakejumping.dto.*;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.enums.AdminRole;
 import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.StoreMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -58,18 +56,22 @@ public class StoreService {
     }
 
     @Transactional
-    public ResetPasswordResult resetPassword(Long adminId) {
-
-        Admin admin = adminMapper.findById(adminId);
+    public ResetPasswordResult resetPassword(ResetPasswordRequest resetPasswordRequest) {
+        if(adminMapper.findByUsername(resetPasswordRequest.getUsername()) == null) {
+            throw new CustomException("존재하지 않는 관리자이름입니다.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        Admin admin = adminMapper.findByUsername(resetPasswordRequest.getUsername());
 
         String tempPassword = generateTempPassword(8);
 
         admin.setPassword(passwordEncoder.encode(tempPassword));
         admin.setMustChangePassword(true);
-
+        Long store_id=admin.getStoreId();
+        Store store=storeMapper.findById(store_id);
+        String storeName=store.getName();
         adminMapper.updatePasswordAndFlag(admin);
 
-        return new ResetPasswordResult(admin.getId(), tempPassword);
+        return new ResetPasswordResult(admin.getId(), resetPasswordRequest.getUsername(), tempPassword,storeName);
     }
 
     @Transactional

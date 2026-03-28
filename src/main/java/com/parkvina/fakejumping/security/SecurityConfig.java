@@ -71,7 +71,7 @@ public class SecurityConfig {
                         .requestMatchers(allowedUrls).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        .requestMatchers("/auth/me","/auth/change-password","/api/stores/**").authenticated()
+                        .requestMatchers("/auth/me","/auth/change-password","/api/stores/**","/api/admin/reset-password").authenticated()
                         .requestMatchers("/api/**").hasAnyRole(anyRoles)
                         .anyRequest().authenticated()
                 )

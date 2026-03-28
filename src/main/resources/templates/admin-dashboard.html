@@ -451,6 +451,7 @@
                 <button class="btn btn-ghost" onclick="sortByDateAsc()">오래된순</button>
                 <button class="btn btn-ghost" onclick="sortByStore()">지점명순</button>
             </div>
+
     `;
 
         data.forEach((d, i) => {
@@ -460,13 +461,63 @@
                 <div style="font-size:12px; color:#888;">
                     생성일: ${d.createdAt}
                 </div>
+                    <button class="btn btn-danger btn-sm"
+                onclick="resetPassword('${d.username}')">
+                비밀번호 초기화
+            </button>
             </div>
+
         `;
         });
 
         html += `</div>`;
 
         document.getElementById("main-content").innerHTML = html;
+    }
+    async function resetPassword(username) {
+
+        const confirm = await Swal.fire({
+            title: "비밀번호 강제 초기화",
+            text: `${username}의 비밀번호를 초기화하시겠습니까?`,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "초기화",
+            cancelButtonText: "취소"
+        });
+
+        if (!confirm.isConfirmed) return;
+
+        try {
+            const res = await fetch("/api/admin/reset-password", {
+                method: "POST",
+                headers: {
+                    Authorization: "Bearer " + localStorage.getItem("accessToken")
+                },
+                body: JSON.stringify({
+                    userName: username
+                })
+            });
+
+            if (!res.ok) throw new Error();
+
+            const data = await res.json();
+
+            await Swal.fire({
+                title: "비밀번호 강제 초기화 완료",
+                html: `
+<b>지점명:</b>${data.storeName}<br>
+                <b>아이디:</b> ${data.username}<br>
+                <b>임시 비밀번호:</b> ${data.tempPassword}<br><br>
+                <small style="color:red;">
+                    ※ 로그인 후 반드시 변경해야 합니다.
+                </small>
+            `,
+                icon: "success"
+            });
+
+        } catch (e) {
+            Swal.fire("오류", "비밀번호 초기화 실패", "error");
+        }
     }
     function sortByDateDesc() {
         tempData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
