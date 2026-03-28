@@ -3,6 +3,7 @@ package com.parkvina.fakejumping.service;
 import com.parkvina.fakejumping.controller.CustomException;
 import com.parkvina.fakejumping.dto.CreateRequest;
 import com.parkvina.fakejumping.dto.CreateResult;
+import com.parkvina.fakejumping.dto.ResetPasswordResult;
 import com.parkvina.fakejumping.dto.TempResponse;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
@@ -28,7 +29,8 @@ public class StoreService {
     private final StoreMapper storeMapper;
     private final AdminMapper adminMapper;
     private final PasswordEncoder passwordEncoder;
-    public String generateTempPassword(int len){
+
+    public String generateTempPassword(int len) {
         SecureRandom secureRandom = new SecureRandom();
         /*
          * 1. 소문자의 범위 : 97 ~ 122
@@ -49,10 +51,27 @@ public class StoreService {
         return builder.toString();
 
     }
-    public String generateUsername(String storeName){
+
+    public String generateUsername(String storeName) {
         return storeName + "_" + UUID.randomUUID().toString().substring(0, 4);
 
     }
+
+    @Transactional
+    public ResetPasswordResult resetPassword(Long adminId) {
+
+        Admin admin = adminMapper.findById(adminId);
+
+        String tempPassword = generateTempPassword(8);
+
+        admin.setPassword(passwordEncoder.encode(tempPassword));
+        admin.setMustChangePassword(true);
+
+        adminMapper.updatePasswordAndFlag(admin);
+
+        return new ResetPasswordResult(admin.getId(), tempPassword);
+    }
+
     @Transactional
     public CreateResult createStore(CreateRequest createRequest) {
 
@@ -98,13 +117,16 @@ public class StoreService {
                 createRequest.getAddress()
         );
     }
+
     public List<TempResponse> tempAdminList() {
         return adminMapper.selectTempAdminList();
     }
-    public List<Store>readActiveStore(){
+
+    public List<Store> readActiveStore() {
         return storeMapper.selectActiveStore();
     }
-    public int countActiveStore(){
-        return storeMapper.countActiveStore();
+
+    public int countTempActiveStore() {
+        return adminMapper.countTempAdmin();
     }
 }

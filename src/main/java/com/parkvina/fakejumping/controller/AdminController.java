@@ -3,14 +3,11 @@ package com.parkvina.fakejumping.controller;
 import com.parkvina.fakejumping.dto.CreateRequest;
 import com.parkvina.fakejumping.dto.CreateResult;
 import com.parkvina.fakejumping.dto.TempResponse;
-import com.parkvina.fakejumping.entity.Store;
-import com.parkvina.fakejumping.security.AuthService;
 import com.parkvina.fakejumping.service.StoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -42,6 +39,6 @@ public class AdminController {
     @GetMapping("/admin/temp/count")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public int tempAdminCount() {
-        return storeService.countActiveStore();
+        return storeService.countTempActiveStore();
     }
 }

@@ -149,6 +149,7 @@
             if(response.ok){
                 localStorage.setItem("role",data.role);
                 localStorage.setItem("accessToken", data.accessToken);
+                localStorage.setItem("storeName", data.storeSummary?.name || "");
                 if(data.role === "SUPER_ADMIN"){
 
                     await Swal.fire({
