@@ -1,14 +1,13 @@
 package com.parkvina.fakejumping.security;
 
 import com.parkvina.fakejumping.controller.CustomException;
-import com.parkvina.fakejumping.dto.ChangePasswordRequest;
-import com.parkvina.fakejumping.dto.LoginRequest;
-import com.parkvina.fakejumping.dto.LoginResponse;
-import com.parkvina.fakejumping.dto.TokenResult;
+import com.parkvina.fakejumping.dto.*;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.AdminRefreshToken;
+import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.enums.AdminRole;
 import com.parkvina.fakejumping.mapper.AdminMapper;
+import com.parkvina.fakejumping.mapper.StoreMapper;
 import com.parkvina.fakejumping.mapper.TokenMapper;
 import com.parkvina.fakejumping.service.JwtUtils;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +25,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final TokenMapper tokenMapper;
+    private final StoreMapper storeMapper;
+
     @Transactional
     public void changePassword(Long adminId, ChangePasswordRequest req) {
 
@@ -100,13 +101,21 @@ public class AuthService {
             );
 
             System.out.println("👉 refreshToken DB 저장 완료");
-
+            Store store = storeMapper.findById(admin.getStoreId());
+            StoreSummary storeSummary=null;
+            if(store!=null){
+                storeSummary = new StoreSummary();
+                storeSummary.setId(store.getId());
+                storeSummary.setName(store.getName());
+            }
             LoginResponse response = new LoginResponse(
                     accessToken,
                     admin.getId(),
                     admin.getUsername(),
                     admin.getRole(),
-                    admin.getMustChangePassword()
+                    admin.getMustChangePassword(),
+                    storeSummary // 👈 여기 추가
+
             );
 
             System.out.println("🔥 [SIGN-IN] 정상 종료");
@@ -136,12 +145,21 @@ public class AuthService {
         AdminRole role = AdminRole.valueOf(jwtUtils.getRole(newRefreshToken));
         String newAccessToken = jwtUtils.createToken(adminId, username, role);
         Admin admin = adminMapper.findById(adminId);
+        Store store = storeMapper.findById(admin.getStoreId());
+        StoreSummary storeSummary = null;
+
+        if (store != null) {
+            storeSummary = new StoreSummary();
+            storeSummary.setId(store.getId());
+            storeSummary.setName(store.getName());
+        }
         LoginResponse response = new LoginResponse(
                 newAccessToken,
                 adminId,
                 username,
                 role,
-                Boolean.TRUE.equals(admin.getMustChangePassword())
+                admin.getMustChangePassword(),
+                storeSummary
         );
         return new TokenResult(response, newRefreshToken);
 

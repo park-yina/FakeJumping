@@ -53,4 +53,5 @@
             must_change_password = false
         WHERE id = #{id}
     </update>
+
 </mapper>

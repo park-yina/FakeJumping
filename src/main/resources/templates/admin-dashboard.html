@@ -250,12 +250,14 @@
 
         // ✅ STORE_ADMIN이면 다른 화면
         if (role === "STORE_ADMIN") {
+            const storeName = localStorage.getItem("storeName") || "매장";
+
             document.getElementById("main-content").innerHTML = `
-            <div class="card">
-                <h3>🏪 ${localStorage.getItem("username") || "매장"}님 환영합니다</h3>
-                <p class="text-gray-500">매장 관리 페이지입니다.</p>
-            </div>
-        `;
+        <div class="card">
+            <h3>🏪 ${storeName} 관리 페이지</h3>
+            <p class="text-gray-500">매장 운영을 관리할 수 있습니다.</p>
+        </div>
+    `;
             return;
         }
 
