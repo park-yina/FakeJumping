@@ -146,10 +146,12 @@
             }
 
             const data = await response.json();
+            console.log(data);
             if(response.ok){
-                localStorage.setItem("role",data.role);
+                localStorage.setItem("role", data.role);
                 localStorage.setItem("accessToken", data.accessToken);
                 localStorage.setItem("storeName", data.storeSummary?.name || "");
+
                 if(data.role === "SUPER_ADMIN"){
 
                     await Swal.fire({
@@ -160,11 +162,13 @@
                     });
 
                 }
-                if(data.mustChangePassword){
-                    window.location.href="/change-password";
-                }else{
-                    window.location.href="/admin/dashboard";
-                }
+                setTimeout(()=>{
+                    if(data.mustChangePassword){
+                        location.href="/change-password";
+                    }else{
+                        location.href="/admin/dashboard";
+                    }
+                }, 100);
 
             }else{
 
