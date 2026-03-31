@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface StoreMapper {
@@ -26,6 +27,6 @@ WHERE name=#{name}
     Store findByName(String name);
     void insertStore(Store store);
     List<Store> selectActiveStore();
-    int countActiveStore();
+    Map<String,Object> countStoreSummary();
 
 }

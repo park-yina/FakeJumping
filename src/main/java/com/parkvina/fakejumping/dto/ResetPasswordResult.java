@@ -7,7 +7,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class ResetPasswordResult {
     Long id;
-    String userName;
+    String username;
     String tempPassword;
     String storeName;
 }

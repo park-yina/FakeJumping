@@ -30,7 +30,7 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
     private final String[] allowedUrls =
-            { "/", "/auth/sign-in","/sign-inView" ,"/admin/dashboard","/change-password"   // 🔥 추가
+            { "/", "/auth/sign-in","/sign-inView" ,"/admin/dashboard","/change-password","/admin-dashboard.js"  // 🔥 추가
             };
     private final JwtUtils jwtUtils;
     private final LogoutHandlerImpl logoutHandler;
