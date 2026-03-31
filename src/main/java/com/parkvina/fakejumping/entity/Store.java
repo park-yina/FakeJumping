@@ -10,6 +10,7 @@ public class Store {
     private String name;
     private String region;
     private String address;
+    private String city;
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime closedAt;

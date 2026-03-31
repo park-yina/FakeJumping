@@ -144,32 +144,50 @@ async function renderTempSummary() {
         if (!res.ok) throw new Error();
 
         const data = await res.json();
+
         document.getElementById("temp-summary").innerHTML = `
         <div class="card dashboard-card" onclick="navigate('temp',this)">
 
-            <div class="card-header">
-                <h3>👤 관리자 현황</h3>
+            <!-- 🔥 헤더 개선 -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="font-weight:600;">👤 관리자 현황</h3>
+
+                <!-- 🔥 새로고침 버튼 -->
+                <button onclick="event.stopPropagation(); renderTempSummary();" 
+                        style="background:transparent; border:none; color:#8892a4; cursor:pointer;">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
             </div>
 
-            <div class="card-body">
-                <div class="stats">
-                    <div class="stat">
-                        <div class="stat-value">${data.total}</div>
-                        <div class="stat-label">전체</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value text-green">${data.normalCount}</div>
-                        <div class="stat-label">정상</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value text-orange">${data.tempCount}</div>
-                        <div class="stat-label">임시</div>
-                    </div>
-                </div>
+            <!-- 🔥 통계 -->
+          <div class="stats">
+    <div class="stat">
+        <div class="stat-value total">${data.total}</div>
+        <div class="stat-label">전체</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value success">${data.normalCount}</div>
+        <div class="stat-label">정상</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value warning">${data.tempCount}</div>
+        <div class="stat-label">임시</div>
+    </div>
+</div>
+
+            <!-- 🔥 차트 + 비율 -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
 
                 <div class="chart-wrapper">
                     <canvas id="adminChart"></canvas>
                 </div>
+
+                <!-- 🔥 비율 텍스트 추가 -->
+                <div style="text-align:right; font-size:13px; color:#8892a4;">
+                    <div>정상 ${(data.normalCount / data.total * 100 || 0).toFixed(0)}%</div>
+                    <div>임시 ${(data.tempCount / data.total * 100 || 0).toFixed(0)}%</div>
+                </div>
+
             </div>
 
         </div>
@@ -187,11 +205,9 @@ async function renderTempSummary() {
                 }]
             },
             options: {
-                cutout: '70%', // 🔥 도넛 얇게
+                cutout: '70%',
                 plugins: {
-                    legend: {
-                        display: false // 🔥 깔끔하게 제거
-                    }
+                    legend: { display: false }
                 }
             }
         });
@@ -299,7 +315,12 @@ function renderCreateStore() {
                 <label class="block text-sm mb-1 text-gray-400">지역</label>
                 <input id="region"
                        class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-400"
+                       placeholder="예: 서울"
                        readonly>
+                       <input id="city"
+       class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 mt-2"
+       placeholder="예: 강서구"
+       readonly>
             </div>
 
             <!-- 버튼 영역 -->
@@ -327,6 +348,7 @@ function searchAddress() {
 
             // region (시/도)
             document.getElementById("region").value = data.sido;
+            document.getElementById("city").value=data.sigungu
         }
     }).open();
 }
@@ -335,7 +357,7 @@ async function createStore() {
     const storeName = document.getElementById("storeName").value;
     const address = document.getElementById("address").value;
     const region = document.getElementById("region").value;
-
+    const city=document.getElementById("city").value;
     if (!storeName) {
         Swal.fire("스토어 명을 입력하세요");
         return;
@@ -349,7 +371,8 @@ async function createStore() {
     const requestData = {
         storeName,
         address,
-        region
+        region,
+        city
     };
 
     try {

@@ -7,5 +7,6 @@ import lombok.Data;
 public class CreateRequest {
     private String storeName;
     private String region;
+    private String city;
     private String address;
 }

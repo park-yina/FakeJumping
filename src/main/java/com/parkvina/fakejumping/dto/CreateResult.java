@@ -11,6 +11,7 @@ public class CreateResult {
     private String username;
     private String tempPassword;
     private String region;
+    private String city;
     private String address;
 
 }

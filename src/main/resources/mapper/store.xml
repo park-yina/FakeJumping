@@ -9,8 +9,8 @@
             useGeneratedKeys="true"
             keyProperty="id">
 
-        INSERT INTO store (name, region, address,is_active)
-        VALUES (#{name}, #{region}, #{address},#{isActive})
+        INSERT INTO store (name, region, city,address,is_active)
+        VALUES (#{name}, #{region}, #{city},#{address},#{isActive})
 
     </insert>
     <select id="selectActiveStore"

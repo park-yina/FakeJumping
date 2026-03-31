@@ -111,6 +111,7 @@ public class StoreService {
         Store store = new Store();
         store.setName(createRequest.getStoreName());
         store.setRegion(createRequest.getRegion());
+        store.setCity(createRequest.getCity());
         store.setAddress(createRequest.getAddress());
         store.setIsActive(true);
         try {
@@ -141,6 +142,7 @@ public class StoreService {
                 username,
                 tempPassword,
                 createRequest.getRegion(),
+                createRequest.getCity(),
                 createRequest.getAddress()
         );
     }
