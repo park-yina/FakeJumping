@@ -32,6 +32,7 @@ jobs:
         env:
           JASYPT_PASSWORD: ${{ secrets.JASYPT_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          WEB_HOOK: ${{secrets.WEB_HOOK}}
 
       - name: Login to DockerHub
         if: github.event_name == 'push'
@@ -63,7 +64,8 @@ jobs:
               -p 8080:8080 \
               -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
               -e JASYPT_PASSWORD=${{ secrets.JASYPT_PASSWORD }} \
+              -e WEB_HOOK=${{secrets.WEB_HOOK}}\
               -e SPRING_DATASOURCE_USERNAME=yina \
               -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }} \
-               -e "SPRING_DATASOURCE_URL=jdbc:mysql://db-test.ca90segwm4q1.us-east-1.rds.amazonaws.com:3306/fakebattle?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true" \
+              -e "SPRING_DATASOURCE_URL=jdbc:mysql://db-test.ca90segwm4q1.us-east-1.rds.amazonaws.com:3306/fakebattle?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true" \
               parkyina/fakejumping:latest
