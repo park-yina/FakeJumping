@@ -2,12 +2,12 @@ package com.parkvina.fakejumping.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+
 @AllArgsConstructor
-public class ResetPasswordResult {
-    Long id;
+public class ResetPasswordRequest {
     String username;
-    String tempPassword;
-    String storeName;
 }

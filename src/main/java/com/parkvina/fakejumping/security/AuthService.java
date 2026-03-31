@@ -12,6 +12,8 @@ import com.parkvina.fakejumping.mapper.TokenMapper;
 import com.parkvina.fakejumping.service.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +28,23 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final TokenMapper tokenMapper;
     private final StoreMapper storeMapper;
+    public Admin getLoginAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
+        if (auth == null || auth.getPrincipal() == null) {
+            throw new CustomException("인증 정보 없음", HttpStatus.UNAUTHORIZED);
+        }
+
+        Long adminId = (Long) auth.getPrincipal();
+
+        Admin admin = adminMapper.findById(adminId);
+
+        if (admin == null) {
+            throw new CustomException("존재하지 않는 관리자", HttpStatus.UNAUTHORIZED);
+        }
+
+        return admin;
+    }
     @Transactional
     public void changePassword(Long adminId, ChangePasswordRequest req) {
 

@@ -1,16 +1,15 @@
 package com.parkvina.fakejumping.service;
 
 import com.parkvina.fakejumping.controller.CustomException;
-import com.parkvina.fakejumping.dto.CreateRequest;
-import com.parkvina.fakejumping.dto.CreateResult;
-import com.parkvina.fakejumping.dto.ResetPasswordResult;
-import com.parkvina.fakejumping.dto.TempResponse;
+import com.parkvina.fakejumping.dto.*;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.enums.AdminRole;
 import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.StoreMapper;
+import com.parkvina.fakejumping.security.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -29,6 +29,8 @@ public class StoreService {
     private final StoreMapper storeMapper;
     private final AdminMapper adminMapper;
     private final PasswordEncoder passwordEncoder;
+    private final DiscordService discordService;
+    private final AuthService authService;
 
     public String generateTempPassword(int len) {
         SecureRandom secureRandom = new SecureRandom();
@@ -58,18 +60,43 @@ public class StoreService {
     }
 
     @Transactional
-    public ResetPasswordResult resetPassword(Long adminId) {
-
-        Admin admin = adminMapper.findById(adminId);
+    public ResetPasswordResult resetPassword(ResetPasswordRequest request) {
+        Admin admin = adminMapper.findByUsername(request.getUsername());
+        Admin me = authService.getLoginAdmin();
+        if (admin == null) {
+            throw new CustomException("존재하지 않는 관리자입니다.", HttpStatus.NOT_FOUND);
+        }
+        if (me.getRole() != AdminRole.SUPER_ADMIN &&
+                !me.getStoreId().equals(admin.getStoreId())) {
+            throw new CustomException("권한 없음", HttpStatus.FORBIDDEN);
+        }
 
         String tempPassword = generateTempPassword(8);
 
         admin.setPassword(passwordEncoder.encode(tempPassword));
         admin.setMustChangePassword(true);
 
-        adminMapper.updatePasswordAndFlag(admin);
+        Long storeId = admin.getStoreId();
+        Store store = storeMapper.findById(storeId);
 
-        return new ResetPasswordResult(admin.getId(), tempPassword);
+        if (store == null) {
+            throw new CustomException("매장 정보가 존재하지 않습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        String storeName = store.getName();
+
+        adminMapper.updatePasswordAndFlag(admin);
+        discordService.sendPasswordResetRequest(
+                me.getUsername(),
+                admin.getUsername(),
+                storeName
+        );
+        return new ResetPasswordResult(
+                admin.getId(),
+                admin.getUsername(),
+                tempPassword,
+                storeName
+        );
     }
 
     @Transactional
@@ -122,11 +149,14 @@ public class StoreService {
         return adminMapper.selectTempAdminList();
     }
 
-    public List<Store> readActiveStore() {
-        return storeMapper.selectActiveStore();
+    //    public int countTempActiveStore() {
+//        return adminMapper.countTempAdmin();
+//    }
+    public Map<String, Object> getAdminSummary() {
+        return adminMapper.countAdminSummary();
     }
 
-    public int countTempActiveStore() {
-        return adminMapper.countTempAdmin();
+    public Map<String, Object> getStoreSummary() {
+        return storeMapper.countStoreSummary();
     }
 }

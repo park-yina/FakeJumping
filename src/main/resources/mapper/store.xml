@@ -21,10 +21,12 @@
         WHERE is_active = 1
 
     </select>
-    <select id="countActiveStore" resultType="int">
-        SELECT COUNT(*)
+    <select id="countStoreSummary" resultType="map">
+        SELECT
+            COUNT(*) AS total,
+            SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) AS active,
+            SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) AS inactive
         FROM store
-        WHERE is_active = 1
     </select>
 
 </mapper>

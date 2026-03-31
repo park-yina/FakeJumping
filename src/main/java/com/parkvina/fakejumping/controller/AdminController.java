@@ -1,8 +1,6 @@
 package com.parkvina.fakejumping.controller;
 
-import com.parkvina.fakejumping.dto.CreateRequest;
-import com.parkvina.fakejumping.dto.CreateResult;
-import com.parkvina.fakejumping.dto.TempResponse;
+import com.parkvina.fakejumping.dto.*;
 import com.parkvina.fakejumping.service.StoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -11,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -18,7 +17,17 @@ import java.util.List;
 public class AdminController {
     //private final AuthService authService;
     private final StoreService storeService;
-
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @GetMapping("/admin/summary-store")
+    public Map<String,Object> getStoreSummary() {
+       return  storeService.getStoreSummary();
+    }
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PostMapping("/admin/reset-password")
+    public ResponseEntity<ResetPasswordResult>adminResetPassword(@RequestBody ResetPasswordRequest resetPasswordRequest){
+        ResetPasswordResult resetPasswordResult=storeService.resetPassword(resetPasswordRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(resetPasswordResult);
+    }
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping("/stores")
     public ResponseEntity<CreateResult> makeStore(@RequestBody CreateRequest createRequest) {
@@ -38,7 +47,8 @@ public class AdminController {
 
     @GetMapping("/admin/temp/count")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public int tempAdminCount() {
-        return storeService.countTempActiveStore();
+    public Map<String, Object> tempAdminCount() {
+        return storeService.getAdminSummary();
     }
+
 }

@@ -30,7 +30,7 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
     private final String[] allowedUrls =
-            { "/", "/auth/sign-in","/sign-inView" ,"/admin/dashboard","/change-password"   // 🔥 추가
+            { "/", "/auth/sign-in","/sign-inView" ,"/admin/dashboard","/change-password","/admin-dashboard.js"  // 🔥 추가
             };
     private final JwtUtils jwtUtils;
     private final LogoutHandlerImpl logoutHandler;
@@ -71,7 +71,7 @@ public class SecurityConfig {
                         .requestMatchers(allowedUrls).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        .requestMatchers("/auth/me","/auth/change-password","/api/stores/**").authenticated()
+                        .requestMatchers("/auth/me","/auth/change-password","/api/stores/**","/api/admin/reset-password").authenticated()
                         .requestMatchers("/api/**").hasAnyRole(anyRoles)
                         .anyRequest().authenticated()
                 )

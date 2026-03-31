@@ -53,5 +53,13 @@
             must_change_password = false
         WHERE id = #{id}
     </update>
+    <select id="countAdminSummary" resultType="map">
+        SELECT
+            COUNT(*) AS total,
+            SUM(must_change_password = 1) AS tempCount,
+            SUM(must_change_password = 0) AS normalCount
+        FROM admin
+        WHERE store_id IS NOT NULL
+    </select>
 
 </mapper>
