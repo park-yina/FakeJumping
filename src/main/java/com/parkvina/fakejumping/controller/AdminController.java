@@ -37,7 +37,16 @@ public class AdminController {
                 .body(createResult);
 
     }
+    @GetMapping("/stores")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<StoreResult>>getAllStores(@RequestParam(required = false)String region,
+                                                         @RequestParam(required = false)String city,
+                                                         @RequestParam(required = false)String district
+                                                         ) {
+       List<StoreResult> storeResultList=storeService.getAllStoreList(region, city, district);
+       return ResponseEntity.status(HttpStatus.OK).body(storeResultList);
 
+    }
     @GetMapping("/admin/temp")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<TempResponse>> tempAdminList() {
@@ -50,5 +59,4 @@ public class AdminController {
     public Map<String, Object> tempAdminCount() {
         return storeService.getAdminSummary();
     }
-
 }

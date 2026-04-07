@@ -4,10 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-public class CreateRequest {
-    private String storeName;
+@AllArgsConstructor
+public class StoreResult {
+    private Long id;
+    private String name;
     private String region;
     private String city;
     private String district;
+
     private String address;
+    private String status;
 }
