@@ -1,9 +1,9 @@
-let tempData = [];
-const API_BASE = "/api/admin";
+import { createStoreApi } from "./store-api.js";
+import {renderTempSummary} from "./common-uis.js";
+import {renderStoreSummary} from "./store-uis.js";
+import {sortByDateAsc,sortByDateDesc,sortByStore} from "./utils.js";
 
-const getAuthHeaders = () => ({
-    Authorization: `Bearer ${localStorage.getItem("accessToken")}`
-});
+let tempData = [];
 
 // ✅ 카드 HTML 생성 헬퍼
 const renderCard = ({ title, content, onclick = "" }) => `
@@ -40,17 +40,15 @@ async function checkLogin() {
 
     if (!token) {
         location.href = "/sign-inView";
-        return;
+        return false;
     }
 
     let res = await fetch("/auth/me", {
-        headers: {Authorization: "Bearer " + token},
+        headers: { Authorization: "Bearer " + token },
         credentials: "include"
     });
 
     if (res.status === 401) {
-
-        // refresh 시도
         const refreshRes = await fetch("/auth/refresh", {
             method: "POST",
             credentials: "include"
@@ -59,31 +57,28 @@ async function checkLogin() {
         if (!refreshRes.ok) {
             localStorage.clear();
             location.href = "/sign-inView";
-            return;
+            return false;
         }
 
         const newData = await refreshRes.json();
         localStorage.setItem("accessToken", newData.accessToken);
 
-        // 🔥 다시 요청
         res = await fetch("/auth/me", {
-            headers: {Authorization: "Bearer " + newData.accessToken},
+            headers: { Authorization: "Bearer " + newData.accessToken },
             credentials: "include"
         });
     }
 
     const data = await res.json();
+
     if (data.mustChangePassword === true) {
-        if (window.location.pathname !== "/change-password") {
-            window.location.href = "/change-password";
-        }
-        return;
+        location.href = "/change-password";
+        return false;
     }
 
     localStorage.setItem("role", data.role);
-    applyRole(data.role);
+    return true; // 🔥 핵심
 }
-
 function applyRole() {
     const role = localStorage.getItem("role");
     const logo = document.getElementById("logo-text");
@@ -99,11 +94,13 @@ function applyRole() {
 }
 
 async function init() {
-    await checkLogin();
+    const isValid = await checkLogin();
+
+    if (!isValid) return; // 🔥 여기 추가
+
     applyRole();
     await renderHome();
 }
-
 init();
 
 async function renderHome() {
@@ -133,135 +130,7 @@ async function renderHome() {
         renderTempSummary()
     ]);
 }
-async function renderTempSummary() {
-    try {
-        const res = await fetch("/api/admin/temp/count", {
-            headers: {
-                Authorization: "Bearer " + localStorage.getItem("accessToken")
-            }
-        });
 
-        if (!res.ok) throw new Error();
-
-        const data = await res.json();
-        document.getElementById("temp-summary").innerHTML = `
-        <div class="card dashboard-card" onclick="navigate('temp',this)">
-
-            <div class="card-header">
-                <h3>👤 관리자 현황</h3>
-            </div>
-
-            <div class="card-body">
-                <div class="stats">
-                    <div class="stat">
-                        <div class="stat-value">${data.total}</div>
-                        <div class="stat-label">전체</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value text-green">${data.normalCount}</div>
-                        <div class="stat-label">정상</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value text-orange">${data.tempCount}</div>
-                        <div class="stat-label">임시</div>
-                    </div>
-                </div>
-
-                <div class="chart-wrapper">
-                    <canvas id="adminChart"></canvas>
-                </div>
-            </div>
-
-        </div>
-        `;
-
-        const ctx = document.getElementById("adminChart");
-
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['정상', '임시'],
-                datasets: [{
-                    data: [data.normalCount, data.tempCount],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                cutout: '70%', // 🔥 도넛 얇게
-                plugins: {
-                    legend: {
-                        display: false // 🔥 깔끔하게 제거
-                    }
-                }
-            }
-        });
-
-    } catch (e) {
-        console.error(e);
-        document.getElementById("temp-summary").innerHTML = `
-        <div class="card">
-            <h3>⚠️ 관리자 데이터 불러오기 실패</h3>
-        </div>
-        `;
-    }
-}
-async function renderStoreSummary() {
-
-    try {
-        const res = await fetch("/api/admin/summary-store", {
-            headers: {
-                Authorization: "Bearer " + localStorage.getItem("accessToken")
-            }
-        });
-
-        if (!res.ok) throw new Error();
-
-        const data = await res.json();
-
-        document.getElementById("store-summary").innerHTML = `
-    <div class="card" style="cursor:pointer"
-         onclick="navigate('store-list',this)">
-
-        <h3>🏪 매장 현황</h3>
-
-        <canvas id="storeChart" height="200"></canvas>
-
-        <p style="margin-top:10px;">
-            전체 ${data.total} / 운영 ${data.active} / 폐점 ${data.inactive}
-        </p>
-
-        <p class="text-gray-500">클릭하면 매장 목록</p>
-    </div>
-`;
-
-        const ctx = document.getElementById("storeChart");
-
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['운영중', '폐점'],
-                datasets: [{
-                    data: [data.active, data.inactive],
-                }]
-            },
-            options: {
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
-
-    } catch (e) {
-        console.error(e);
-        document.getElementById("main-content").innerHTML = `
-        <div class="card">
-            <h3>⚠️ 매장 데이터 불러오기 실패</h3>
-        </div>
-        `;
-    }
-}
 
 function renderCreateStore() {
     document.getElementById("page-title").textContent = "스토어 생성";
@@ -299,7 +168,16 @@ function renderCreateStore() {
                 <label class="block text-sm mb-1 text-gray-400">지역</label>
                 <input id="region"
                        class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-400"
+                       placeholder="예: 경기"
                        readonly>
+                       <input id="city"
+       class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 mt-2"
+       placeholder="예: 안양시"
+       readonly>
+       <input id="district"
+       class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 mt-2"
+       placeholder="예: 만안구"
+       readonly>
             </div>
 
             <!-- 버튼 영역 -->
@@ -327,14 +205,41 @@ function searchAddress() {
 
             // region (시/도)
             document.getElementById("region").value = data.sido;
+
+            const sigungu = data.sigungu; // ex: "안양시 만안구", "양천구", "군포시"
+
+            let city = null;
+            let district = null;
+
+            const parts = sigungu.split(" ");
+
+            if (parts.length === 2) {
+                // 성남시 분당구
+                city = parts[0];
+                district = parts[1];
+            } else if (parts.length === 1) {
+                if (parts[0].endsWith("구")) {
+                    // 서울 (양천구)
+                    district = parts[0];
+                } else {
+                    // 군포시
+                    city = parts[0];
+                }
+            }
+
+            document.getElementById("city").value = city || "";
+            document.getElementById("district").value = district || "";
         }
     }).open();
 }
 
-async function createStore() {
+
+export async function createStore() {
     const storeName = document.getElementById("storeName").value;
     const address = document.getElementById("address").value;
     const region = document.getElementById("region").value;
+    const city = document.getElementById("city").value;
+    const district = document.getElementById("district").value;
 
     if (!storeName) {
         Swal.fire("스토어 명을 입력하세요");
@@ -349,24 +254,13 @@ async function createStore() {
     const requestData = {
         storeName,
         address,
-        region
+        region,
+        city,
+        district
     };
 
     try {
-        const res = await fetch("/api/stores", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + localStorage.getItem("accessToken")
-            },
-            body: JSON.stringify(requestData) // ✅ 여기 중요
-        });
-
-        if (!res.ok) {
-            throw new Error("서버 오류");
-        }
-
-        const data = await res.json();
+        const data = await createStoreApi(requestData);
 
         Swal.fire({
             title: "생성 완료 🎉",
@@ -378,38 +272,20 @@ async function createStore() {
             icon: "success"
         });
 
-        console.log(data);
-
     } catch (e) {
         console.error(e);
-        Swal.fire("에러 발생", "스토어 생성 실패", "error");
-    }
-}
 
-async function renderTest() {
-    document.getElementById("page-title").textContent = "테스트중";
+        let errorMessage = "스토어 생성 실패";
 
-    document.getElementById("main-content").innerHTML = `
-        <div class="card flex flex-col items-center justify-center py-16 text-center">
-            <div class="text-5xl mb-4">🚧</div>
-            <h2 class="text-xl font-semibold mb-2">준비중입니다</h2>
-            <p class="text-gray-500">위 기능은 곧 추가될 예정입니다.</p>
-        </div>
-    `;
-}
-
-async function renderTemp() {
-    document.getElementById("page-title").textContent = "임시 계정";
-
-    const res = await fetch("/api/admin/temp", {
-        headers: {
-            Authorization: "Bearer " + localStorage.getItem("accessToken")
+        if (e instanceof Response) {
+            try {
+                const errorData = await e.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch {}
         }
-    });
 
-    tempData = await res.json();
-
-    renderTempList(tempData);
+        Swal.fire("에러 발생", errorMessage, "error");
+    }
 }
 
 function renderTempList(data) {
@@ -417,9 +293,9 @@ function renderTempList(data) {
         <div class="card">
 
             <div style="margin-bottom:10px;">
-                <button class="btn btn-ghost" onclick="sortByDateDesc()">최신순</button>
-                <button class="btn btn-ghost" onclick="sortByDateAsc()">오래된순</button>
-                <button class="btn btn-ghost" onclick="sortByStore()">지점명순</button>
+                <button class="btn btn-ghost" onclick="sortByDateDesc(data)">최신순</button>
+                <button class="btn btn-ghost" onclick="sortByDateAsc(data)">오래된순</button>
+                <button class="btn btn-ghost" onclick="sortByStore(data)">지점명순</button>
             </div>
 
     `;
@@ -438,7 +314,7 @@ function renderTempList(data) {
             </div>
 
         `;
-    });
+    });;
 
     html += `</div>`;
 
@@ -491,32 +367,28 @@ async function resetPassword(username) {
         Swal.fire("오류", "비밀번호 초기화 실패", "error");
     }
 }
+document.addEventListener("DOMContentLoaded", () => {
+    const logoutBtn = document.getElementById("logout-btn");
 
-function sortByDateDesc() {
-    tempData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    renderTempList(tempData);
-}
-
-function sortByDateAsc() {
-    tempData.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    renderTempList(tempData);
-}
-
-function sortByStore() {
-    tempData.sort((a, b) => a.storeName.localeCompare(b.storeName, 'ko'));
-    renderTempList(tempData);
-}
-
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", logout);
+    }
+});
 async function logout() {
-    const token = localStorage.getItem("accessToken");
+    try {
+        const token = localStorage.getItem("accessToken");
 
-    await fetch("/api/auth/sign-out", {
-        method: "POST", // 🔥 중요
-        headers: {
-            "Authorization": "Bearer " + token
-        }
-    });
+        await fetch("/api/auth/sign-out", {
+            method: "POST",
+            headers: {
+                "Authorization": "Bearer " + token
+            }
+        });
+    } catch (e) {
+        console.warn("로그아웃 요청 실패 (무시하고 진행)", e);
+    }
 
+    // 🔥 서버 실패해도 무조건 로그아웃 처리
     localStorage.clear();
     location.href = "/sign-inView";
 }

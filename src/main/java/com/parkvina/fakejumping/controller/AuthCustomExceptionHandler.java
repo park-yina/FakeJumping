@@ -3,19 +3,29 @@ package com.parkvina.fakejumping.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@ControllerAdvice
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
 public class AuthCustomExceptionHandler {
 
-    // 🔥 커스텀 예외
     @ExceptionHandler(CustomException.class)
-    public ResponseEntity<String> handleCustomException(CustomException e) {
-        return ResponseEntity.status(e.getStatus()).body(e.getMessage());
+    public ResponseEntity<Map<String, String>> handleCustomException(CustomException e) {
+
+        Map<String, String> body = new HashMap<>();
+        body.put("message", e.getMessage());
+
+        return ResponseEntity.status(e.getStatus()).body(body);
     }
 
-    // 🔥 기존 RuntimeException (fallback)
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleRuntimeException(RuntimeException e) {
-        return ResponseEntity.status(500).body(e.getMessage());
+    public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException e) {
+
+        Map<String, String> body = new HashMap<>();
+        body.put("message", e.getMessage());
+
+        return ResponseEntity.status(500).body(body);
     }
 }

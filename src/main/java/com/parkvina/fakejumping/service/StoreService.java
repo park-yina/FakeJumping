@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -102,15 +103,25 @@ public class StoreService {
     @Transactional
     public CreateResult createStore(CreateRequest createRequest) {
 
-        if (storeMapper.findByName(createRequest.getStoreName()) != null) {
+        Store existingStore = storeMapper.findByName(createRequest.getStoreName());
+        if (existingStore != null) {
             throw new CustomException("중복되는 지점명입니다.", HttpStatus.CONFLICT);
         }
 
+        Store overlappingAddress = storeMapper.findByAddress(createRequest.getAddress());
+        if (overlappingAddress != null) {
+            throw new CustomException(
+                    "이미 해당 장소에는 " + overlappingAddress.getName() + " 매장이 등록되어 있습니다.",
+                    HttpStatus.CONFLICT
+            );
+        }
         String username = generateUsername(createRequest.getStoreName());
         String tempPassword = generateTempPassword(8);
         Store store = new Store();
         store.setName(createRequest.getStoreName());
         store.setRegion(createRequest.getRegion());
+        store.setCity(createRequest.getCity());
+        store.setDistrict(createRequest.getDistrict());
         store.setAddress(createRequest.getAddress());
         store.setIsActive(true);
         try {
@@ -141,10 +152,42 @@ public class StoreService {
                 username,
                 tempPassword,
                 createRequest.getRegion(),
+                createRequest.getCity(),
+                createRequest.getDistrict(),
                 createRequest.getAddress()
         );
     }
+    private String normalize(String value) {
+        return (value == null || value.trim().isEmpty()) ? null : value;
+    }
+    public List<StoreResult> getAllStoreList(String region, String city, String district){
 
+        region = normalize(region);
+        city = normalize(city);
+        district = normalize(district);
+
+        return storeMapper.findStores(region, city, district)
+                .stream()
+                .map(store -> new StoreResult(
+                        store.getId(),
+                        store.getName(),
+                        store.getRegion(),
+                        Optional.ofNullable(store.getCity()).orElse(""),
+                        Optional.ofNullable(store.getDistrict()).orElse(""),
+                        store.getAddress(),
+                        store.getIsActive() ? "운영중" : "폐점"
+                ))
+                .toList();
+    }
+    public List<String>getCityList(String region){
+        return storeMapper.findCitiesByRegion(region);
+    }
+    public List<String>getRegionList(){
+        return storeMapper.findRegions();
+    }
+    public List<String>getDistrictList(String region,String city){
+        return storeMapper.findDistricts(region,city);
+    }
     public List<TempResponse> tempAdminList() {
         return adminMapper.selectTempAdminList();
     }
