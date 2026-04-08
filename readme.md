@@ -63,27 +63,6 @@ SUPER_ADMIN을 중심으로 매장 생성, 관리자 관리, 통계 시각화를
 - 특정 지역 클릭 시 해당 매장 목록 페이지로 이동
 
 ---
-
-## 🛠 기술 스택
-
-### Backend
-- Spring Boot
-- Spring Security (JWT 인증)
-- MyBatis
-- MySQL (AWS RDS)
-
-### Frontend
-- HTML / CSS / JavaScript
-- Chart.js
-- SweetAlert2
-
-### Infra
-- AWS EC2
-- Docker
-- GitHub Actions (CI/CD)
-
----
-
 ## 🔐 인증 방식
 - Access Token (JWT)
 - Refresh Token (HttpOnly Cookie)
