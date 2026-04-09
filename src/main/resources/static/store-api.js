@@ -25,3 +25,14 @@ export async function fetchStoreSummary(){
 
     return res.json();
 }
+export async function fetchRegionSummary() {
+    const res = await fetch("/api/stores/region-summary", {
+        headers: {
+            Authorization: "Bearer " + localStorage.getItem("accessToken")
+        }
+    });
+
+    if (!res.ok) throw res;
+
+    return res.json();
+}

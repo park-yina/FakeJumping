@@ -157,6 +157,10 @@ public class StoreService {
                 createRequest.getAddress()
         );
     }
+    public List<RegionSummary>getAllRegionSummary(){
+        return storeMapper.regionSummary();
+    }
+
     private String normalize(String value) {
         return (value == null || value.trim().isEmpty()) ? null : value;
     }

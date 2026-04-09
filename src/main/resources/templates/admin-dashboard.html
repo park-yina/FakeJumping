@@ -11,6 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module" src="/admin-dashboard.js"></script>
+    <script type="module" src="/common-uis.js"></script>
+    <script type="module" src="/store-uis.js"></script>
+    <script type="module" src="/admin-dashboard.js"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -20,8 +23,8 @@
             --surface2: #1e2436;
             --border: #2a3050;
             --accent: #4f80ff;
-            --accent-dim: rgba(79,128,255,0.12);
-            --accent-glow: rgba(79,128,255,0.3);
+            --accent-dim: rgba(79, 128, 255, 0.12);
+            --accent-glow: rgba(79, 128, 255, 0.3);
             --text: #e8eaf0;
             --text-dim: #8892a4;
             --success: #34d399;
@@ -30,6 +33,36 @@
             --sidebar-w: 240px;
         }
 
+        .small-card {
+            padding: 16px;
+        }
+        .text-warning {
+            color: var(--warning);
+            font-weight: 500;
+
+        }
+            .dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background: var(--accent) /* primary 색 */
+            }
+        .badge-warning {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--warning);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .small-card h3 {
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        .small-card div:first-of-type {
+            line-height: 1.2;
+        }
         body {
             font-family: 'Noto Sans KR', sans-serif;
             background: var(--bg);
@@ -37,7 +70,30 @@
             display: flex;
             min-height: 100vh;
         }
+        .refresh-btn {
+            background: none;
+            border: none;
+            outline: none;
 
+            cursor: pointer;
+            padding: 4px; /* 너무 크지 않게 */
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            color: #9ca3af;
+            font-size: 16px;
+
+            transition: all 0.2s ease;
+        }
+        .refresh-btn:hover {
+            color: #00BCD4;
+            transform: rotate(90deg);
+        }
+        .refresh-btn:active {
+            transform: scale(0.9);
+        }
         .sidebar {
             width: var(--sidebar-w);
             background: var(--surface);
@@ -170,8 +226,13 @@
         }
         #dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: 2fr 2fr 1fr; /* 관리자 작게 */
             gap: 16px;
+        }
+        @media (max-width: 768px) {
+            #dashboard-grid {
+                grid-template-columns: 1fr;
+            }
         }
         /* 5 */
         .btn-5 {
@@ -273,15 +334,27 @@
     </div>
 
     <div id="super-admin-menu" style="display:none">
-        <div class="nav-item active" onclick="navigate('home', this)">🏠 대시보드</div>
-        <div class="nav-item" onclick="navigate('create-store', this)">🏪 매장 생성</div>
-        <div class="nav-item" onclick="navigate('store-list', this)">📋 매장 목록</div>
-        <div class="nav-item" onclick="navigate('temp', this)">👤 임시 계정</div>
+        <div class="nav-item active" data-page="home">
+            <i class="fa-solid fa-house"></i> 대시보드
+        </div>
+        <div class="nav-item"  data-page="create-store">
+            <i class="fa-solid fa-store"></i> 매장 생성
+        </div>
+        <div class="nav-item" data-page="store-list">
+            <i class="fa-solid fa-clipboard-list"></i> 매장 목록
+        </div>
+        <div class="nav-item" data-page="temp">
+            <i class="fa-solid fa-user-clock"></i> 임시 계정
+        </div>
     </div>
 
     <div id="store-admin-menu" style="display:none">
-        <div class="nav-item active" onclick="navigate('home', this)">🏠 홈</div>
-        <div class="nav-item" onclick="navigate('my-store', this)">내 매장</div>
+        <div class="nav-item active" onclick="navigate('home', this)">
+            <i class="fa-solid fa-house"></i> 홈
+        </div>
+        <div class="nav-item" onclick="navigate('my-store', this)">
+            <i class="fa-solid fa-shop"></i> 내 매장
+        </div>
     </div>
 
     <button id="logout-btn" class="logout-btn">

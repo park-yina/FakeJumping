@@ -1,5 +1,6 @@
 package com.parkvina.fakejumping.mapper;
 
+import com.parkvina.fakejumping.dto.RegionSummary;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
 import org.apache.ibatis.annotations.Mapper;
@@ -65,5 +66,6 @@ ORDER BY city
             @Param("city") String city,
             @Param("district")String district
     );
+    List<RegionSummary>regionSummary();
 
 }

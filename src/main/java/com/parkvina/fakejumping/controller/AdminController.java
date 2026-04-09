@@ -47,12 +47,19 @@ public class AdminController {
        return ResponseEntity.status(HttpStatus.OK).body(storeResultList);
 
     }
+    @GetMapping("/stores/region-summary")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<RegionSummary>> getAllRegionSummary() {
+        List<RegionSummary> regionSummaryList=storeService.getAllRegionSummary();
+    return ResponseEntity.status(HttpStatus.OK).body(regionSummaryList);
+    }
     @GetMapping("/admin/temp")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<TempResponse>> tempAdminList() {
         List<TempResponse> tempResponsesList = storeService.tempAdminList();
         return ResponseEntity.status(HttpStatus.OK).body(tempResponsesList);
     }
+
 
     @GetMapping("/admin/temp/count")
     @PreAuthorize("hasRole('SUPER_ADMIN')")

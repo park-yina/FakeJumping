@@ -66,5 +66,10 @@
 
         ORDER BY district
     </select>
-
+    <select id="regionSummary" resultType="com.parkvina.fakejumping.dto.RegionSummary">
+        SELECT region, COUNT(*) AS count
+        FROM store
+        GROUP BY region
+        ORDER BY count DESC
+    </select>
 </mapper>
