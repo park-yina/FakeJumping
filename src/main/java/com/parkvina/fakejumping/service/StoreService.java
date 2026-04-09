@@ -195,12 +195,20 @@ public class StoreService {
     public List<TempResponse> tempAdminList() {
         return adminMapper.selectTempAdminList();
     }
-
-    //    public int countTempActiveStore() {
-//        return adminMapper.countTempAdmin();
-//    }
+    public int countPendingStores(){
+        return storeMapper.countFutureOpenStores();
+    }
     public Map<String, Object> getAdminSummary() {
         return adminMapper.countAdminSummary();
+    }
+    public PendingStoreSummary getPendingStoreSummary(Integer limit) {
+
+        int finalLimit = (limit == null || limit <= 0) ? 5 : limit;
+
+        int count = storeMapper.countFutureOpenStores();
+        List<PendingStoreInfo> stores = storeMapper.findPendingStoreInfo(finalLimit);
+
+        return new PendingStoreSummary(count, stores);
     }
 
     public Map<String, Object> getStoreSummary() {

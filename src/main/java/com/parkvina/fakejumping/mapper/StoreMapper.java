@@ -1,5 +1,7 @@
 package com.parkvina.fakejumping.mapper;
 
+import com.parkvina.fakejumping.dto.PendingStoreInfo;
+import com.parkvina.fakejumping.dto.PendingStoreSummary;
 import com.parkvina.fakejumping.dto.RegionSummary;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
@@ -35,13 +37,6 @@ where address=#{address}
 """
     )
     Store findByAddress(@Param("address") String address);
-    @Select(
-            """
-SELECT *
-FROM store
-"""
-    )
-    List<Store>findAllStores();
     @Select("""
 SELECT DISTINCT region
 FROM store
@@ -56,6 +51,13 @@ AND city IS NOT NULL
 ORDER BY city
 """)
     List<String> findCitiesByRegion(String region);
+    @Select("""
+
+            SELECT COUNT(*)
+       FROM store
+       WHERE is_active = 1
+         AND open_at IS NULL;""")
+    int countFutureOpenStores();
     List<String> findDistricts(@Param("region") String region,
                                @Param("city") String city);
     void insertStore(Store store);
@@ -67,5 +69,6 @@ ORDER BY city
             @Param("district")String district
     );
     List<RegionSummary>regionSummary();
+    List<PendingStoreInfo>findPendingStoreInfo(@Param("limit")Integer limit);
 
 }

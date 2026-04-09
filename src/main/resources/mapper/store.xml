@@ -72,4 +72,9 @@
         GROUP BY region
         ORDER BY count DESC
     </select>
+    <select id="findPendingStoreInfo" resultType="com.parkvina.fakejumping.dto.PendingStoreInfo">
+SELECT id,created_at,region,name from store where is_active=1 AND open_at IS NULL ORDER BY created_at DESC
+<if test="limit!=null">LIMIT #{limit}</if>
+
+    </select>
 </mapper>

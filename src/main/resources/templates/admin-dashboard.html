@@ -9,6 +9,8 @@
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module" src="/admin-dashboard.js"></script>
     <script type="module" src="/common-uis.js"></script>
@@ -54,7 +56,67 @@
             border-radius: 6px;
             font-size: 12px;
         }
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
 
+        /* 리스트 카드 */
+        .admin-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            padding: 14px 16px;
+            border-radius: 10px;
+            background: var(--surface2);
+
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .admin-item:hover {
+            background: var(--surface);
+        }
+
+        /* 왼쪽 정보 */
+        .admin-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .admin-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .admin-id {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-left: 6px;
+        }
+
+        .admin-meta {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        /* 버튼 */
+        .btn-danger {
+            background: var(--danger);
+            color: var(--text);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-danger:hover {
+            background: #ef4444;
+            transform: translateY(-1px);
+        }
         .small-card h3 {
             font-size: 14px;
             color: #9ca3af;

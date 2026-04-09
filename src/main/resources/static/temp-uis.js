@@ -1,5 +1,14 @@
 import {resetPassword, sortByDateAsc, sortByDateDesc, sortByStore} from "./utils.js";
-
+function formatDate(str) {
+    return new Date(str).toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
+}
 export async function renderTemp() {
     const res = await fetch("/api/admin/temp", {
         headers: {
@@ -23,7 +32,7 @@ export function renderTempList(data, { onResetPassword }) {
     el.innerHTML = `
         <div class="card temp-list">
 
-            <div style="margin-bottom:10px;">
+            <div class="toolbar">
                 <button class="btn btn-ghost sort-desc">최신순</button>
                 <button class="btn btn-ghost sort-asc">오래된순</button>
                 <button class="btn btn-ghost sort-store">지점명순</button>
@@ -35,21 +44,42 @@ export function renderTempList(data, { onResetPassword }) {
 
     const container = el.querySelector(".list-container");
 
+    function formatDate(str) {
+        return new Date(str).toLocaleString("ko-KR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+        });
+    }
+
     function renderList(list) {
         container.innerHTML = list.map((d, i) => `
-            <div style="padding:10px; border-bottom:1px solid #333;">
-                <b>#${i + 1} ${d.username}</b> - ${d.storeName}
-                <div style="font-size:12px; color:#888;">
-                    생성일: ${d.createdAt}
+            <div class="admin-item">
+                
+                <div class="admin-info">
+                    <div class="admin-title">
+                        #${i + 1} ${d.storeName}
+                        <span class="admin-id">${d.username}</span>
+                    </div>
+
+                    <div class="admin-meta">
+                        생성일: ${formatDate(d.createdAt)}
+                    </div>
                 </div>
-                <button class="btn btn-danger btn-sm reset-btn" data-username="${d.username}">
+
+                <button class="btn-danger reset-btn" data-username="${d.username}">
                     비밀번호 초기화
                 </button>
+
             </div>
         `).join("");
     }
 
     renderList(data);
+
     el.querySelector(".sort-desc").onclick = () => {
         renderList(sortByDateDesc(data));
     };
@@ -62,7 +92,6 @@ export function renderTempList(data, { onResetPassword }) {
         renderList(sortByStore(data));
     };
 
-    // 🔥 reset 이벤트 (외부 함수 사용)
     container.addEventListener("click", (e) => {
         if (e.target.classList.contains("reset-btn")) {
             const username = e.target.dataset.username;
