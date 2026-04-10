@@ -3,20 +3,6 @@ import {renderHome, renderTempSummary} from "./common-uis.js";
 import {renderStoreSummary,renderRegionSummary} from "./store-uis.js";
 import {navigate, sortByDateAsc, sortByDateDesc, sortByStore} from "./utils.js";
 
-let tempData = [];
-
-// ✅ 카드 HTML 생성 헬퍼
-
-
-// ✅ 에러 카드 래퍼
-
-const withErrorCard = (targetId, label) =>
-    (err) => {
-        document.getElementById(targetId).innerHTML = renderCard({
-            title: `⚠️ ${label} 불러오기 실패`
-        });
-    };
-
 
 async function checkLogin() {
     let token = localStorage.getItem("accessToken");

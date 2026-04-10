@@ -72,7 +72,7 @@ export async function renderTempSummary() {
             </div>
 
             <div style="margin-top:10px;">
-                <span class="badge-warning">
+                <span class="badge-primary">
                     임시 ${data.tempCount}
                 </span>
             </div>

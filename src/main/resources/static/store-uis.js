@@ -95,7 +95,7 @@ export async function renderRegionSummary() {
 
             <div style="margin-top:10px;">
                 ${data.slice(0, 3).map(d => `
-                    <span class="badge-warning">
+                    <span class="badge-primary">
                         ${d.region} ${d.count}
                     </span>
                 `).join("")}

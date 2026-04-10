@@ -14,8 +14,9 @@ export async function createStoreApi(requestData) {
 
     return res.json();
 }
-export async function fetchStoreSummary(){
-  const res = await fetch("/api/admin/summary-store", {
+
+export async function fetchStoreSummary() {
+    const res = await fetch("/api/admin/summary-store", {
         headers: {
             Authorization: "Bearer " + localStorage.getItem("accessToken")
         }
@@ -25,6 +26,7 @@ export async function fetchStoreSummary(){
 
     return res.json();
 }
+
 export async function fetchRegionSummary() {
     const res = await fetch("/api/stores/region-summary", {
         headers: {
@@ -34,5 +36,15 @@ export async function fetchRegionSummary() {
 
     if (!res.ok) throw res;
 
+    return res.json();
+}
+
+export async function fetchPendingStoreSummary() {
+    const res = await fetch("/api/stores/pending-summary", {
+        headers: {
+            Authorization: "Bearer " + localStorage.getItem("accessToken")
+        }
+    });
+    if (!res.ok) throw res;
     return res.json();
 }
