@@ -13,6 +13,53 @@ export function sortByStore(data) {
         a.storeName.localeCompare(b.storeName, 'ko')
     );
 }
+export async function createStoreHandler() {
+    const storeName = document.getElementById("storeName").value;
+    const address = document.getElementById("address").value;
+    const region = document.getElementById("region").value;
+
+    if (!storeName) {
+        Swal.fire("스토어 명을 입력하세요");
+        return;
+    }
+
+    if (!address || !region) {
+        Swal.fire("주소를 선택하세요");
+        return;
+    }
+
+    try {
+        const data = await createStoreApi({
+            storeName,
+            address,
+            region
+        });
+
+        await Swal.fire({
+            title: "생성 완료 🎉",
+            html: `
+                <b>매장명:</b> ${data.storeName}<br>
+                <b>계정:</b> ${data.username}<br>
+                <b>임시 비밀번호:</b> ${data.tempPassword}
+            `,
+            icon: "success"
+        });
+
+    } catch (e) {
+        console.error(e);
+
+        let msg = "스토어 생성 실패";
+
+        if (e instanceof Response) {
+            try {
+                const err = await e.json();
+                msg = err.message || msg;
+            } catch {}
+        }
+
+        Swal.fire("에러 발생", msg, "error");
+    }
+}
 export function searchAddress() {
     new daum.Postcode({
         oncomplete: function (data) {
@@ -61,7 +108,7 @@ export async function resetPassword(username) {
         cancelButtonText: "취소"
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!confirm.isConfirmed) return false; // 🔥 변경
 
     try {
         const res = await fetch("/api/admin/reset-password", {
@@ -82,7 +129,7 @@ export async function resetPassword(username) {
         await Swal.fire({
             title: "비밀번호 강제 초기화 완료",
             html: `
-<b>지점명:</b>${data.storeName}<br>
+                <b>지점명:</b> ${data.storeName}<br>
                 <b>아이디:</b> ${data.username}<br>
                 <b>임시 비밀번호:</b> ${data.tempPassword}<br><br>
                 <small style="color:red;">
@@ -92,9 +139,18 @@ export async function resetPassword(username) {
             icon: "success"
         });
 
+        return true; // 🔥 성공 시
+
     } catch (e) {
-        Swal.fire("오류", "비밀번호 초기화 실패", "error");
+        await Swal.fire("오류", "비밀번호 초기화 실패", "error");
+        return false; // 🔥 실패 시
     }
+}
+export function formatDate(str) {
+    return new Date(str).toLocaleString('ko-KR', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+    });
 }
 
 export function navigate(page, el) {

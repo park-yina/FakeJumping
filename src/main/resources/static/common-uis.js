@@ -1,6 +1,6 @@
 import { fetchTempSummary } from "./common-apis.js";
 import { navigate,setActive } from "./utils.js";
-import {renderRegionSummary, renderStoreSummary} from "./store-uis.js";
+import {renderPendingStoreSummary, renderRegionSummary, renderStoreSummary} from "./store-uis.js";
 export function renderCard({ title, content = "", clickable = false, className = "" }) {
     return `
         <div class="card ${className}" ${clickable ? 'style="cursor:pointer"' : ''}>
@@ -19,7 +19,7 @@ export async function renderHome() {
         const storeName = localStorage.getItem("storeName") ?? "매장";
         document.getElementById("main-content").innerHTML = renderCard({
             title: `🏪 ${storeName} 관리 페이지`,
-            content: `<p class="text-gray-500">매장 운영을 관리할 수 있습니다.</p>`
+            content: `<p style="color:var(--txt-2); margin-top:8px; font-size:13.5px;">매장 운영을 관리할 수 있습니다.</p>`
         });
         return;
     }
@@ -29,62 +29,47 @@ export async function renderHome() {
   <div id="store-summary"></div>
   <div id="region-summary"></div>
   <div id="temp-summary"></div>
+  <div id="pendingStore-summary"></div>
 </div>
-  `;
+    `;
 
-    // 병렬 실행으로 성능 개선
     await Promise.all([
         renderStoreSummary(),
         renderRegionSummary(),
-        renderTempSummary()
+        renderTempSummary(),
+        renderPendingStoreSummary()
     ]);
 }
 
 export async function renderTempSummary() {
     try {
         const data = await fetchTempSummary();
-
         const el = document.getElementById("temp-summary");
 
         el.innerHTML = `
-        <div class="card dashboard-card small-card temp-card">
-
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                
-                <h3 style="display:flex; align-items:center; gap:8px;">
-                    <span class="dot"></span>
+        <div class="card temp-card" style="cursor:pointer">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="dot dot-amber"></span>
                     관리자
-                </h3>
-
-                <button class="refresh-btn">
+                </div>
+                <button class="refresh-btn" title="새로고침">
                     <i class="fa-solid fa-arrows-rotate"></i>
                 </button>
             </div>
 
-            <div style="margin-top:12px;">
-                <div style="font-size:26px; font-weight:700;">
-                    ${data.total}
-                </div>
+            <div class="stat-value">${data.total}</div>
+            <div class="stat-label">전체 관리자</div>
 
-                <div class="text-gray-500" style="margin-top:4px;">
-                    전체 관리자
-                </div>
-            </div>
-
-            <div style="margin-top:10px;">
-                <span class="badge-primary">
-                    임시 ${data.tempCount}
-                </span>
+            <div class="badge-container">
+                <span class="badge badge-amber">임시 ${data.tempCount}</span>
             </div>
         </div>
         `;
 
-        // 🔥 카드 클릭
         el.querySelector(".temp-card").addEventListener("click", (e) => {
             navigate("temp", e.currentTarget);
         });
-
-        // 🔥 새로고침 버튼
         el.querySelector(".refresh-btn").addEventListener("click", (e) => {
             e.stopPropagation();
             renderTempSummary();
@@ -93,7 +78,10 @@ export async function renderTempSummary() {
     } catch (e) {
         document.getElementById("temp-summary").innerHTML = `
             <div class="card">
-                <h3>⚠️ 관리자 데이터 불러오기 실패</h3>
+                <div class="error-card">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    관리자 데이터 불러오기 실패
+                </div>
             </div>
         `;
     }
