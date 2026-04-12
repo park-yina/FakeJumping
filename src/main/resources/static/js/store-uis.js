@@ -238,13 +238,28 @@ export async function renderStoreSummary() {
         new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['운영중', '폐점'],
+                labels: ['운영중', '오픈 예정', '폐점', '비활성'],
                 datasets: [{
-                    data: [data.active, data.inactive],
-                    backgroundColor: ['rgba(56,201,160,0.8)', 'rgba(224,92,138,0.6)'],
-                    borderColor: ['rgba(56,201,160,1)', 'rgba(224,92,138,1)'],
+                    data: [
+                        data.operating,
+                        data.scheduled,
+                        data.closed,
+                        data.inactive
+                    ],
+                    backgroundColor: [
+                        'rgba(56,201,160,0.8)',   // 운영중
+                        'rgba(59,130,246,0.7)',   // 예정
+                        'rgba(224,92,138,0.6)',   // 폐점
+                        'rgba(120,120,120,0.4)'   // 테스트/비활성
+                    ],
+                    borderColor: [
+                        'rgba(56,201,160,1)',
+                        'rgba(59,130,246,1)',
+                        'rgba(224,92,138,1)',
+                        'rgba(120,120,120,1)'
+                    ],
                     borderWidth: 1,
-                    hoverOffset: 4
+                    hoverOffset: 6
                 }]
             },
             options: {

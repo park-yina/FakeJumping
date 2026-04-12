@@ -44,11 +44,46 @@
 
     </select>
     <select id="countStoreSummary" resultType="map">
-        SELECT
+            SELECT
             COUNT(*) AS total,
+
             SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) AS active,
-            SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) AS inactive
+
+            -- 비활성(테스트/폐점 포함)
+            SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) AS inactive,
+
+            SUM(CASE
+            WHEN is_active = 1
+            AND closed_at IS NULL
+            AND open_at IS NOT NULL
+            AND open_at <![CDATA[ <= ]]> NOW()
+            THEN 1 ELSE 0
+            END) AS operating,
+
+            SUM(CASE
+            WHEN is_active = 1
+            AND open_at > NOW()
+            THEN 1 ELSE 0
+            END) AS scheduled,
+
+            SUM(CASE
+            WHEN closed_at IS NOT NULL
+            THEN 1 ELSE 0
+            END) AS closed
+
+            FROM store
+    </select>
+    <update id="updateOpenAt">
+        UPDATE store
+        SET open_at=#{openAt}
+        WHERE id=#{id}
+    </update>
+    <select id="findMyStoreSummary" resultType="com.parkvina.fakejumping.dto.store.MyStoreSummary">
+        SELECT
+            open_at AS openAt,
+            created_at AS createdAt
         FROM store
+        WHERE id = #{storeId}
     </select>
     <select id="findDistricts" resultType="string">
         SELECT DISTINCT district
@@ -72,7 +107,7 @@
         GROUP BY region
         ORDER BY count DESC
     </select>
-    <select id="findPendingStoreInfo" resultType="com.parkvina.fakejumping.dto.PendingStoreInfo">
+    <select id="findPendingStoreInfo" resultType="com.parkvina.fakejumping.dto.store.PendingStoreInfo">
 SELECT id,created_at AS createdAt,region,name from store where is_active=1 AND open_at IS NULL ORDER BY created_at DESC
 <if test="limit!=null">LIMIT #{limit}</if>
 

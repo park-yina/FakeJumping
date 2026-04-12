@@ -1,106 +1,171 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
 
-    <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css"
-            rel="stylesheet"
-            integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx"
-            crossorigin="anonymous"
-    />
-    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <title>짝퉁배틀 관리자 로그인</title>
 
     <style>
+        :root{
+            --bg:#0f1117;
+            --surface:#181c27;
+            --surface2:#1e2436;
+            --border:#2a3050;
+            --primary:#4f80ff;
+            --text:#e8eaf0;
+            --text-dim:#8892a4;
+        }
+
         body{
-            background-color:#f5f5f5;
+            margin:0;
             height:100vh;
+            background:var(--bg);
+            color:var(--text);
         }
 
-        .login-card{
-            max-width:420px;
-            border-radius:12px;
+        .wrapper{
+            display:flex;
+            height:100%;
         }
 
-        .logo{
-            font-size:26px;
+        /* 좌측 브랜딩 */
+        .left{
+            flex:1;
+            background:linear-gradient(135deg,#1e2436,#0f1117);
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            padding:60px;
+        }
+
+        .brand-title{
+            font-size:36px;
             font-weight:700;
-            color:#343a40;
+            margin-bottom:12px;
+        }
+
+        .brand-desc{
+            color:var(--text-dim);
+            font-size:14px;
+        }
+
+        /* 우측 로그인 */
+        .right{
+            width:420px;
+            background:var(--surface);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            border-left:1px solid var(--border);
+        }
+
+        .login-box{
+            width:100%;
+            padding:40px;
+        }
+
+        .login-title{
+            font-size:22px;
+            font-weight:600;
+            margin-bottom:20px;
+        }
+
+        .form-control{
+            background:var(--surface2);
+            border:1px solid var(--border);
+            color:var(--text);
+        }
+
+        .form-control:focus{
+            border-color:var(--primary);
+            box-shadow:none;
+        }
+
+        .btn-primary{
+            background:var(--primary);
+            border:none;
+        }
+
+        .btn-primary:hover{
+            opacity:0.9;
+        }
+
+        .text-dim{
+            color:var(--text-dim);
+            font-size:12px;
+        }
+
+        /* 모바일 */
+        @media (max-width: 768px){
+            .wrapper{
+                flex-direction:column;
+            }
+
+            .left{
+                display:none;
+            }
+
+            .right{
+                width:100%;
+                border-left:none;
+            }
         }
     </style>
 </head>
 
-<body class="d-flex align-items-center justify-content-center">
-<script
-        src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa"
-        crossorigin="anonymous"
-></script>
+<body>
 
-<div class="container">
+<div class="wrapper">
 
-    <div class="row justify-content-center">
+    <!-- 좌측 브랜딩 -->
+    <div class="left">
+        <div>
+            <div class="brand-title">짝퉁배틀</div>
+            <div class="brand-desc">
+                매장 관리 · 관리자 시스템<br>
+                실시간 운영 데이터를 한눈에 관리하세요.
+            </div>
+        </div>
+    </div>
 
-        <div class="col-12 col-sm-10 col-md-6 col-lg-4">
+    <!-- 우측 로그인 -->
+    <div class="right">
 
-            <div class="card login-card shadow-sm">
+        <div class="login-box">
 
-                <div class="card-body p-4">
+            <div class="login-title">관리자 로그인</div>
 
-                    <div class="text-center mb-4">
-                        <div class="logo">짝퉁배틀</div>
-                        <small class="text-muted">관리자 로그인</small>
-                    </div>
+            <form id="loginForm">
 
-                    <form id="loginForm">
-
-                        <div class="mb-3">
-                            <label class="form-label">아이디</label>
-                            <input
-                                    type="text"
-                                    class="form-control"
-                                    id="username"
-                                    placeholder="아이디 입력"
-                                    required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">비밀번호</label>
-
-                            <input
-                                    type="password"
-                                    class="form-control"
-                                    id="password"
-                                    placeholder="비밀번호 입력"
-                                    required
-                                    autocomplete="current-password"
-                            >
-
-                            <div class="form-check mt-2">
-                                <input class="form-check-input" type="checkbox" id="showPassword">
-                                <label class="form-check-label" for="showPassword">
-                                    비밀번호 보기
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-dark">
-                                로그인
-                            </button>
-                        </div>
-
-                    </form>
-
+                <div class="mb-3">
+                    <label class="text-dim mb-1">아이디</label>
+                    <input type="text" class="form-control" id="username" required>
                 </div>
 
-            </div>
+                <div class="mb-3">
+                    <label class="text-dim mb-1">비밀번호</label>
+                    <input type="password" class="form-control" id="password" required>
 
-            <div class="text-center mt-3 text-muted small">
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="showPassword">
+                        <label class="form-check-label text-dim">
+                            비밀번호 보기
+                        </label>
+                    </div>
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        로그인
+                    </button>
+                </div>
+
+            </form>
+
+            <div class="text-center mt-4 text-dim">
                 © FakeJumping Admin
             </div>
 
@@ -113,85 +178,50 @@
 <script>
     document.getElementById("showPassword").addEventListener("change", function () {
         const passwordInput = document.getElementById("password");
-
-        if (this.checked) {
-            passwordInput.type = "text";
-        } else {
-            passwordInput.type = "password";
-        }
+        passwordInput.type = this.checked ? "text" : "password";
     });
-    document.getElementById("loginForm").addEventListener("submit", async function(e){
 
+    document.getElementById("loginForm").addEventListener("submit", async function(e){
         e.preventDefault();
 
         const username = document.getElementById("username").value;
         const password = document.getElementById("password").value;
 
         try{
-
             const response = await fetch("/auth/sign-in",{
                 method:"POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body:JSON.stringify({
-                    username:username,
-                    password:password
-                })
-
+                credentials:"include",
+                headers:{ "Content-Type":"application/json" },
+                body:JSON.stringify({ username, password })
             });
-            if (!response.ok) {
-                throw new Error("로그인 실패");
-            }
+
+            if (!response.ok) throw new Error();
 
             const data = await response.json();
-            console.log(data);
-            if(response.ok){
-                localStorage.setItem("role", data.role);
-                localStorage.setItem("accessToken", data.accessToken);
-                localStorage.setItem("storeName", data.storeSummary?.name || "");
 
-                if(data.role === "SUPER_ADMIN"){
+            localStorage.setItem("role", data.role);
+            localStorage.setItem("accessToken", data.accessToken);
+            localStorage.setItem("storeName", data.storeSummary?.name || "");
+            localStorage.setItem("storeId",data.storeSummary?.id||"");
+            await Swal.fire({
+                title:"로그인 성공",
+                icon:"success"
+            });
 
-                    await Swal.fire({
-                        title:"로그인 성공",
-                        text:"SUPER ADMIN으로 로그인했습니다.",
-                        icon:"success",
-                        confirmButtonText:"확인"
-                    });
-
-                }
-                setTimeout(()=>{
-                    if(data.mustChangePassword){
-                        location.href="/change-password";
-                    }else{
-                        location.href="/admin/dashboard";
-                    }
-                }, 100);
-
+            if(data.mustChangePassword){
+                location.href="/change-password";
             }else{
-
-                Swal.fire({
-                    title:"로그인 실패",
-                    text:"아이디 또는 비밀번호가 잘못되었습니다.",
-                    icon:"error"
-                });
-
+                location.href="/admin/dashboard";
             }
 
         }catch(e){
-
             Swal.fire({
-                title:"서버 오류",
-                text:"서버와 통신 중 문제가 발생했습니다.",
+                title:"로그인 실패",
+                text:"아이디 또는 비밀번호 확인",
                 icon:"error"
             });
-
         }
-
     });
-
 </script>
 
 </body>

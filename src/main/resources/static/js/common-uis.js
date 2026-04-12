@@ -1,6 +1,7 @@
 import { fetchTempSummary } from "./common-apis.js";
 import { navigate,setActive } from "./utils.js";
 import {renderPendingStoreSummary, renderRegionSummary, renderStoreSummary} from "./store-uis.js";
+import {renderMyStoreSummary} from "./myStore-uis.js";
 export function renderCard({ title, content = "", clickable = false, className = "" }) {
     return `
         <div class="card ${className}" ${clickable ? 'style="cursor:pointer"' : ''}>
@@ -9,18 +10,21 @@ export function renderCard({ title, content = "", clickable = false, className =
         </div>
     `;
 }
+export async function renderMyStoreDashboard() {
+    const el = document.getElementById("main-content");
 
+    el.innerHTML = `
+        <div id="my-store-summary"></div>
+    `;
+
+    await renderMyStoreSummary();
+}
 export async function renderHome() {
     document.getElementById("page-title").textContent = "대시보드";
 
     const role = localStorage.getItem("role");
-
     if (role === "STORE_ADMIN") {
-        const storeName = localStorage.getItem("storeName") ?? "매장";
-        document.getElementById("main-content").innerHTML = renderCard({
-            title: `🏪 ${storeName} 관리 페이지`,
-            content: `<p style="color:var(--txt-2); margin-top:8px; font-size:13.5px;">매장 운영을 관리할 수 있습니다.</p>`
-        });
+        await renderMyStoreDashboard();
         return;
     }
 

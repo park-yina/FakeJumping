@@ -39,7 +39,6 @@ async function checkLogin() {
     }
 
     const data = await res.json();
-
     if (data.mustChangePassword === true) {
         location.href = "/change-password";
         return false;

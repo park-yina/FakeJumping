@@ -2,6 +2,7 @@ package com.parkvina.fakejumping.security;
 
 import com.parkvina.fakejumping.controller.CustomException;
 import com.parkvina.fakejumping.dto.*;
+import com.parkvina.fakejumping.dto.store.StoreSummary;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.AdminRefreshToken;
 import com.parkvina.fakejumping.entity.Store;
@@ -53,15 +54,9 @@ public class AuthService {
         if (admin == null) {
             throw new RuntimeException("존재하지 않는 관리자입니다.");
         }
-        Admin exist = adminMapper.findByUsername(req.getNewUsername());
-        if (exist != null && !exist.getId().equals(adminId)) {
-            throw new RuntimeException("이미 존재하는 아이디입니다.");
-        }
-
         // 🔥 비밀번호 암호화
         String encoded = passwordEncoder.encode(req.getNewPassword());
 
-        admin.setUsername(req.getNewUsername());
         admin.setPassword(encoded);
         admin.setMustChangePassword(false);
 
@@ -99,7 +94,8 @@ public class AuthService {
             String accessToken = jwtUtils.createToken(
                     admin.getId(),
                     admin.getUsername(),
-                    admin.getRole()
+                    admin.getRole(),
+                    admin.getStoreId()
             );
 
             System.out.println("👉 accessToken 생성 완료");
@@ -107,7 +103,8 @@ public class AuthService {
             String refreshToken = jwtUtils.createRefreshToken(
                     admin.getId(),
                     admin.getUsername(),
-                    admin.getRole()
+                    admin.getRole(),
+                    admin.getStoreId()
             );
 
             System.out.println("👉 refreshToken 생성 완료");
@@ -161,7 +158,8 @@ public class AuthService {
         String newRefreshToken = rotateRefreshToken(refreshToken);
         String username = jwtUtils.getUsername(newRefreshToken);
         AdminRole role = AdminRole.valueOf(jwtUtils.getRole(newRefreshToken));
-        String newAccessToken = jwtUtils.createToken(adminId, username, role);
+        Long storeId=jwtUtils.getStoreId(refreshToken);
+        String newAccessToken = jwtUtils.createToken(adminId, username, role,storeId);
         Admin admin = adminMapper.findById(adminId);
         Store store = storeMapper.findById(admin.getStoreId());
         StoreSummary storeSummary = null;
@@ -187,6 +185,7 @@ public class AuthService {
             throw new RuntimeException("Refresh Token 이 유효하지 않습니다.");
         }
         Long adminId = jwtUtils.getAdminId(refreshToken);
+        Long storeId=jwtUtils.getStoreId(refreshToken);
 
         AdminRefreshToken stored = tokenMapper.findByAdminId(adminId);
         if (stored == null) {
@@ -198,7 +197,7 @@ public class AuthService {
 
         String username = jwtUtils.getUsername(refreshToken);
         AdminRole role = AdminRole.valueOf(jwtUtils.getRole(refreshToken));
-        String newToken = jwtUtils.createRefreshToken(adminId, username, role);
+        String newToken = jwtUtils.createRefreshToken(adminId, username, role,storeId);
         LocalDateTime expiresAt = LocalDateTime.now().plusDays(7);
         tokenMapper.upsertRefreshToken(adminId, newToken, expiresAt);
 

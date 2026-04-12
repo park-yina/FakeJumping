@@ -48,8 +48,7 @@
     </select>
     <update id="updateAdminCredentials">
         UPDATE admin
-        SET username = #{username},
-            password = #{password},
+        SET password = #{password},
             must_change_password = false
         WHERE id = #{id}
     </update>

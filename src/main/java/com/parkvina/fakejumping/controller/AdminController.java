@@ -1,6 +1,8 @@
 package com.parkvina.fakejumping.controller;
 
 import com.parkvina.fakejumping.dto.*;
+import com.parkvina.fakejumping.dto.store.PendingStoreSummary;
+import com.parkvina.fakejumping.dto.store.StoreResult;
 import com.parkvina.fakejumping.service.StoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,9 +17,7 @@ import java.util.Map;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class AdminController {
-    //private final AuthService authService;
     private final StoreService storeService;
-
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/admin/summary-store")
     public Map<String, Object> getStoreSummary() {

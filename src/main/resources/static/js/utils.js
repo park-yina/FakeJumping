@@ -1,5 +1,5 @@
 import {renderHome} from "./common-uis.js";
-import {renderTemp, renderTempList} from "./temp-uis.js";
+import {renderTemp, renderTempList, renderTest} from "./temp-uis.js";
 import {renderCreateStore} from "./store-uis.js";
 export function sortByDateDesc(data) {
     return [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -154,12 +154,17 @@ export function formatDate(str) {
 }
 
 export function navigate(page, el) {
-    setActive(el);
+
+    // 🔥 el 없으면 자동으로 찾아서 처리
+    if (!el) {
+        el = document.querySelector(`[data-page="${page}"]`);
+    }
+
+    if (el) setActive(el);
 
     if (page === 'home') renderHome();
     if (page === 'create-store') renderCreateStore();
-    // if(page==='admin-list')renderTemp();
-    if (page === 'store-list') renderTest();
+    if (page === 'store-list') renderTest('스토어 목록 기능 준비중');
     if (page === 'temp') renderTemp();
 }
 export function setActive(el) {

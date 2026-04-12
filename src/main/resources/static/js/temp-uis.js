@@ -1,6 +1,56 @@
-import {formatDate,resetPassword, sortByDateAsc, sortByDateDesc, sortByStore } from "./utils.js";
+import {formatDate, navigate, resetPassword, sortByDateAsc, sortByDateDesc, sortByStore} from "./utils.js";
 
+export function renderTest(title = "기능 준비중") {
+    document.getElementById("page-title").textContent = title;
 
+    const el = document.getElementById("main-content");
+
+    el.innerHTML = `
+        <div style="display:flex; justify-content:center; align-items:center; height:60vh;">
+
+            <div class="card" style="width:360px; text-align:center; padding:28px;">
+
+                <!-- 아이콘 -->
+                <div style="font-size:42px; color:var(--amber); margin-bottom:16px;">
+                    <i class="fa-solid fa-person-digging"></i>
+                </div>
+
+                <!-- 제목 -->
+                <div style="font-size:16px; font-weight:600; color:var(--txt-1);">
+                    ${title}
+                </div>
+
+                <!-- 설명 -->
+                <div style="font-size:13px; color:var(--txt-2); margin-top:8px; line-height:1.5;">
+                    현재 기능을 개발 중입니다.<br>
+                    빠른 시일 내에 제공될 예정입니다.
+                </div>
+
+                <!-- 상태 배지 -->
+                <div style="margin-top:14px;">
+                    <span style="
+                        background: var(--amber-dim);
+                        color: var(--amber);
+                        padding: 4px 10px;
+                        border-radius: 999px;
+                        font-size: 12px;
+                    ">
+                        개발 진행중
+                    </span>
+                </div>
+
+                <!-- 버튼 -->
+                <div style="margin-top:18px;">
+                    <button class="btn btn-ghost back-btn">뒤로가기</button>
+                </div>
+
+            </div>
+
+        </div>
+    `;
+
+    el.querySelector(".back-btn").addEventListener("click", () => navigate("home"));
+}
 export async function renderTemp() {
     const res = await fetch("/api/admin/temp", {
         headers: { Authorization: "Bearer " + localStorage.getItem("accessToken") }
