@@ -2,6 +2,9 @@ package com.parkvina.fakejumping.service;
 
 import com.parkvina.fakejumping.controller.CustomException;
 import com.parkvina.fakejumping.dto.*;
+import com.parkvina.fakejumping.dto.store.PendingStoreInfo;
+import com.parkvina.fakejumping.dto.store.PendingStoreSummary;
+import com.parkvina.fakejumping.dto.store.StoreResult;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.enums.AdminRole;
@@ -9,7 +12,6 @@ import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.StoreMapper;
 import com.parkvina.fakejumping.security.AuthService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -157,6 +159,10 @@ public class StoreService {
                 createRequest.getAddress()
         );
     }
+    public List<RegionSummary>getAllRegionSummary(){
+        return storeMapper.regionSummary();
+    }
+
     private String normalize(String value) {
         return (value == null || value.trim().isEmpty()) ? null : value;
     }
@@ -191,12 +197,20 @@ public class StoreService {
     public List<TempResponse> tempAdminList() {
         return adminMapper.selectTempAdminList();
     }
-
-    //    public int countTempActiveStore() {
-//        return adminMapper.countTempAdmin();
-//    }
+    public int countPendingStores(){
+        return storeMapper.countFutureOpenStores();
+    }
     public Map<String, Object> getAdminSummary() {
         return adminMapper.countAdminSummary();
+    }
+    public PendingStoreSummary getPendingStoreSummary(Integer limit) {
+
+        int finalLimit = (limit == null || limit <= 0) ? 5 : limit;
+
+        int count = storeMapper.countFutureOpenStores();
+        List<PendingStoreInfo> stores = storeMapper.findPendingStoreInfo(finalLimit);
+
+        return new PendingStoreSummary(count, stores);
     }
 
     public Map<String, Object> getStoreSummary() {

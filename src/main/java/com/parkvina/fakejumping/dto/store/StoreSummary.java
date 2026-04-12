@@ -1,4 +1,4 @@
-package com.parkvina.fakejumping.dto;
+package com.parkvina.fakejumping.dto.store;
 
 import lombok.Data;
 

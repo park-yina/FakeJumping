@@ -40,7 +40,7 @@ public class JwtUtils {
         key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String createToken(Long adminId, String username, AdminRole adminRole) {
+    public String createToken(Long adminId, String username, AdminRole adminRole, Long storeId) {
 
         Date now = new Date();
 
@@ -48,17 +48,19 @@ public class JwtUtils {
                 .setSubject(username)
                 .claim(ADMIN_ID_KEY, adminId)
                 .claim(AUTHORIZATION_KEY, adminRole.name())
+                .claim("storeId", storeId)
                 .setIssuedAt(now)
                 .setExpiration(new Date(now.getTime() + TOKEN_TIME))
                 .signWith(key, signatureAlgorithm)
                 .compact();
     }
-    public String createRefreshToken(Long adminId, String username, AdminRole adminRole){
+    public String createRefreshToken(Long adminId, String username, AdminRole adminRole,Long storeId){
         Date now= new Date();
         return Jwts.builder()
                 .setSubject(username)
                 .claim(ADMIN_ID_KEY, adminId)
                 .claim(AUTHORIZATION_KEY, adminRole.name())
+                .claim("storeId", storeId)
                 .setIssuedAt(now)
                 .setExpiration(new Date(now.getTime() + REFRESH_TOKEN_TIME))
                 .signWith(key, signatureAlgorithm)
@@ -134,6 +136,7 @@ public class JwtUtils {
     public Long getAdminId(String token) {
         return getClaimsFromToken(token).get("adminId", Long.class);
     }
+    public Long getStoreId(String token) {return getClaimsFromToken(token).get("storeId",Long.class);}
     public String resolveToken(HttpServletRequest request) {
 
         String bearer = request.getHeader(AUTHORIZATION_HEADER);

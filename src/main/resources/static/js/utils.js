@@ -1,0 +1,175 @@
+import {renderHome} from "./common-uis.js";
+import {renderTemp, renderTempList, renderTest} from "./temp-uis.js";
+import {renderCreateStore} from "./store-uis.js";
+export function sortByDateDesc(data) {
+    return [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+export function sortByDateAsc(data) {
+    return [...data].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+}
+export function sortByStore(data) {
+    return [...data].sort((a, b) =>
+        a.storeName.localeCompare(b.storeName, 'ko')
+    );
+}
+export async function createStoreHandler() {
+    const storeName = document.getElementById("storeName").value;
+    const address = document.getElementById("address").value;
+    const region = document.getElementById("region").value;
+
+    if (!storeName) {
+        Swal.fire("스토어 명을 입력하세요");
+        return;
+    }
+
+    if (!address || !region) {
+        Swal.fire("주소를 선택하세요");
+        return;
+    }
+
+    try {
+        const data = await createStoreApi({
+            storeName,
+            address,
+            region
+        });
+
+        await Swal.fire({
+            title: "생성 완료 🎉",
+            html: `
+                <b>매장명:</b> ${data.storeName}<br>
+                <b>계정:</b> ${data.username}<br>
+                <b>임시 비밀번호:</b> ${data.tempPassword}
+            `,
+            icon: "success"
+        });
+
+    } catch (e) {
+        console.error(e);
+
+        let msg = "스토어 생성 실패";
+
+        if (e instanceof Response) {
+            try {
+                const err = await e.json();
+                msg = err.message || msg;
+            } catch {}
+        }
+
+        Swal.fire("에러 발생", msg, "error");
+    }
+}
+export function searchAddress() {
+    new daum.Postcode({
+        oncomplete: function (data) {
+
+            // 전체 주소
+            document.getElementById("address").value = data.address;
+
+            // region (시/도)
+            document.getElementById("region").value = data.sido;
+
+            const sigungu = data.sigungu; // ex: "안양시 만안구", "양천구", "군포시"
+
+            let city = null;
+            let district = null;
+
+            const parts = sigungu.split(" ");
+
+            if (parts.length === 2) {
+                // 성남시 분당구
+                city = parts[0];
+                district = parts[1];
+            } else if (parts.length === 1) {
+                if (parts[0].endsWith("구")) {
+                    // 서울 (양천구)
+                    district = parts[0];
+                } else {
+                    // 군포시
+                    city = parts[0];
+                }
+            }
+
+            document.getElementById("city").value = city || "";
+            document.getElementById("district").value = district || "";
+        }
+    }).open();
+}
+
+export async function resetPassword(username) {
+
+    const confirm = await Swal.fire({
+        title: "비밀번호 강제 초기화",
+        text: `${username}의 비밀번호를 초기화하시겠습니까?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "초기화",
+        cancelButtonText: "취소"
+    });
+
+    if (!confirm.isConfirmed) return false; // 🔥 변경
+
+    try {
+        const res = await fetch("/api/admin/reset-password", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + localStorage.getItem("accessToken")
+            },
+            body: JSON.stringify({
+                username: username
+            })
+        });
+
+        if (!res.ok) throw new Error();
+
+        const data = await res.json();
+
+        await Swal.fire({
+            title: "비밀번호 강제 초기화 완료",
+            html: `
+                <b>지점명:</b> ${data.storeName}<br>
+                <b>아이디:</b> ${data.username}<br>
+                <b>임시 비밀번호:</b> ${data.tempPassword}<br><br>
+                <small style="color:red;">
+                    ※ 로그인 후 반드시 변경해야 합니다.
+                </small>
+            `,
+            icon: "success"
+        });
+
+        return true; // 🔥 성공 시
+
+    } catch (e) {
+        await Swal.fire("오류", "비밀번호 초기화 실패", "error");
+        return false; // 🔥 실패 시
+    }
+}
+export function formatDate(str) {
+    return new Date(str).toLocaleString('ko-KR', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+    });
+}
+
+export function navigate(page, el) {
+
+    // 🔥 el 없으면 자동으로 찾아서 처리
+    if (!el) {
+        el = document.querySelector(`[data-page="${page}"]`);
+    }
+
+    if (el) setActive(el);
+
+    if (page === 'home') renderHome();
+    if (page === 'create-store') renderCreateStore();
+    if (page === 'store-list') renderTest('스토어 목록 기능 준비중');
+    if (page === 'temp') renderTemp();
+}
+export function setActive(el) {
+    document.querySelectorAll('.nav-item, .dashboard-card')
+        .forEach(e => e.classList.remove('active'));
+
+    el.classList.add('active');
+}

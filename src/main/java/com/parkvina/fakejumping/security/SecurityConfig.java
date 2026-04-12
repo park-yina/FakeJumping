@@ -24,28 +24,36 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+
 @RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
     private final String[] allowedUrls =
-            { "/", "/auth/sign-in","/sign-inView" ,"/admin/dashboard","/change-password","/admin-dashboard.js","/common-apis.js","/common-uis.js","/store-api.js","/store-uis.js","/utils.js"  // 🔥 추가
+            {
+                    "/",
+                    "/auth/sign-in",
+                    "/sign-inView",
+                    "/change-password",
+                    "/admin/dashboard",
             };
     private final JwtUtils jwtUtils;
     private final LogoutHandlerImpl logoutHandler;
     private String[] anyRoles = Arrays.stream(AdminRole.values())
             .map(Enum::name)
             .toArray(String[]::new);
+
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
         return new JwtAuthenticationFilter(jwtUtils);
     }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-                .cors(cors->cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -70,8 +78,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(allowedUrls).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/js/**", "/css/**", "/images/**").permitAll()
 
-                        .requestMatchers("/auth/me","/auth/change-password","/api/stores/**","/api/admin/reset-password").authenticated()
+                        .requestMatchers("/auth/me", "/auth/change-password", "/api/stores/**", "/api/admin/reset-password").authenticated()
                         .requestMatchers("/api/**").hasAnyRole(anyRoles)
                         .anyRequest().authenticated()
                 )
@@ -103,8 +112,9 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+
     @Bean
-    public PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
