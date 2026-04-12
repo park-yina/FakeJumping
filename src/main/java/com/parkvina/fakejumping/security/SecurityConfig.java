@@ -37,6 +37,7 @@ public class SecurityConfig {
                     "/sign-inView",
                     "/change-password",
                     "/admin/dashboard",
+                    "/actuator/**"
             };
     private final JwtUtils jwtUtils;
     private final LogoutHandlerImpl logoutHandler;
