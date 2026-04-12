@@ -58,8 +58,8 @@ jobs:
           cache-from: type=registry,ref=parkyina/fakejumping:latest
           cache-to: type=inline
 
-      # 🚀 배포 + 롤백
-      - name: Deploy to EC2 (with rollback)
+      # 🚀 배포 + 롤백 + 로그
+      - name: Deploy to EC2 (with rollback & logs)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -85,6 +85,11 @@ jobs:
               -e "SPRING_DATASOURCE_URL=jdbc:mysql://db-test.ca90segwm4q1.us-east-1.rds.amazonaws.com:3306/fakebattle?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true" \
               $NEW_IMAGE
 
+            # 🔥 초기 로그 출력
+            echo "📋 container logs (initial)"
+            sleep 3
+            docker logs fakejumping-new || true
+
             echo "⏳ Waiting for health check..."
 
             for i in {1..10}
@@ -93,13 +98,22 @@ jobs:
                 echo "✅ Health check success"
                 break
               fi
+
               echo "⏳ retry... ($i)"
+
+              # 🔥 중간 로그 확인
+              docker logs fakejumping-new --tail 20 || true
+
               sleep 5
             done
 
             # ❗ 최종 실패 체크 → 롤백
             if ! curl -f http://localhost:8081/actuator/health; then
               echo "❌ Health check failed → rollback"
+
+              echo "📋 final container logs"
+              docker logs fakejumping-new || true
+
               docker stop fakejumping-new || true
               docker rm fakejumping-new || true
               exit 1
