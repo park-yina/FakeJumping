@@ -1,5 +1,5 @@
-import { fetchTempSummary } from "./common-apis.js";
-import { navigate,setActive } from "./utils.js";
+import { fetchTempSummary } from "../apis/common-apis.js";
+import { navigate,setActive } from "../utils/utils.js";
 import {renderPendingStoreSummary, renderRegionSummary, renderStoreSummary} from "./store-uis.js";
 import {renderMyStoreSummary} from "./myStore-uis.js";
 export function renderCard({ title, content = "", clickable = false, className = "" }) {

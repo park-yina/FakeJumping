@@ -1,5 +1,5 @@
-import { fetchStoreSummary, fetchRegionSummary, fetchPendingStoreSummary } from "./store-api.js";
-import {searchAddress, navigate, createStoreHandler} from "./utils.js";
+import { fetchStoreSummary, fetchRegionSummary, fetchPendingStoreSummary } from "../apis/store-api.js";
+import {searchAddress, navigate, createStoreHandler} from "../utils/utils.js";
 
 export function renderCreateStore() {
     document.getElementById("page-title").textContent = "스토어 생성";

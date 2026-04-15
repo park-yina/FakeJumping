@@ -1,6 +1,6 @@
-import {renderHome} from "./common-uis.js";
-import {renderTemp, renderTempList, renderTest} from "./temp-uis.js";
-import {renderCreateStore} from "./store-uis.js";
+import {renderHome} from "../uis/common-uis.js";
+import {renderTemp, renderTempList, renderTest} from "../uis/temp-uis.js";
+import {renderCreateStore} from "../uis/store-uis.js";
 export function sortByDateDesc(data) {
     return [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }

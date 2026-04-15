@@ -1,0 +1,349 @@
+import {fetchMyStoreMe} from "../apis/myStore-apis.js";
+import {formatDate, navigate} from "../utils/utils.js";
+import {getHolidayMap} from "../calendar/holidays.js";
+
+function getStatusHtml(store) {
+    if (!store.openAt) {
+        return `
+            <span class="status-item">
+                <span class="dot" style="background:gray"></span>
+                미정
+            </span>
+        `;
+    }
+
+    const now = new Date();
+    const open = new Date(store.openAt);
+
+    if (open > now) {
+        return `
+            <span class="status-item">
+                <span class="dot dot-violet"></span>
+                오픈 예정
+            </span>
+        `;
+    }
+
+    return `
+        <span class="status-item">
+            <span class="dot dot-teal"></span>
+            운영중
+        </span>
+    `;
+}
+
+function getDDay(openAt) {
+    if (!openAt) return "";
+
+    const now = new Date();
+    const open = new Date(openAt);
+
+    const diff = Math.ceil((open - now) / (1000 * 60 * 60 * 24));
+
+    if (diff > 0) return `D-${diff}`;
+    if (diff === 0) return "D-Day";
+    return `D+${Math.abs(diff)}`;
+}
+
+export async function renderMyStoreSummary() {
+    try {
+        const data = await fetchMyStoreMe();
+        const el = document.getElementById("my-store-summary");
+
+        const status = getStatusHtml(data);
+        const dday = getDDay(data.openAt);
+
+        el.innerHTML = `
+        <div class="card my-store-card" style="cursor:pointer">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="dot dot-teal"></span>
+                    내 매장
+                </div>
+                <button class="refresh-btn" title="새로고침">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+
+            <div class="stat-value">${status}</div>
+            <div class="stat-label">
+                ${data.openAt
+            ? `오픈일: ${formatDate(data.openAt)} (${dday})`
+            : "오픈일 미정"}
+            </div>
+
+            <div class="badge-container">
+                <span class="badge badge-teal">
+                    생성일 ${formatDate(data.createdAt)}
+                </span>
+            </div>
+        </div>
+        `;
+
+        // 카드 클릭 → 캘린더 이동
+        el.querySelector(".my-store-card").addEventListener("click", (e) => {
+            openDatePicker(data);
+        });
+
+        // 새로고침
+        el.querySelector(".refresh-btn").addEventListener("click", (e) => {
+            e.stopPropagation();
+            renderMyStoreSummary();
+        });
+
+    } catch (e) {
+        console.error(e);
+        document.getElementById("my-store-summary").innerHTML = `
+            <div class="card">
+                <div class="error-card">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    매장 데이터 불러오기 실패
+                </div>
+            </div>
+        `;
+    }
+}
+
+// 스텝 인디케이터 HTML 생성 헬퍼
+function buildStepBar(currentStep) {
+    const steps = ["날짜 선택", "확인", "완료"];
+
+    return steps.map((label, i) => {
+        const idx = i + 1;
+        const isDone = idx < currentStep;
+        const isActive = idx === currentStep;
+
+        const circleClass = isDone ? "done" : isActive ? "active" : "";
+        const labelClass = isActive ? "active" : "";
+        const circleInner = isDone ? "✓" : idx;
+        const lineClass = isDone ? "done" : "";
+
+        const node = `
+      <div class="swal-step-node">
+        <div class="swal-step-circle ${circleClass}">${circleInner}</div>
+        <span class="swal-step-label ${labelClass}">${label}</span>
+      </div>`;
+
+        const line = i < steps.length - 1
+            ? `<div class="swal-step-line ${lineClass}"></div>`
+            : "";
+
+        return node + line;
+    }).join("");
+}
+
+// 날짜 → "2025년 4월 15일 화요일" 포맷
+function formatDateKo(dateStr) {
+    const d = new Date(dateStr);
+    const days = ["일", "월", "화", "수", "목", "금", "토"];
+    return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
+}
+
+let fp;
+
+async function openDatePicker(store) {
+    let selectedDate = store.openAt ? store.openAt.split("T")[0] : null;
+
+    // ── STEP 1: 날짜 선택 ──────────────────────
+    const step1 = await Swal.fire({
+        width: 420,
+        showCancelButton: true,
+        confirmButtonText: "다음 →",
+        cancelButtonText: "취소",
+        buttonsStyling: false,
+
+        customClass: {
+            popup: "swal-custom",
+            confirmButton: "btn btn-primary",
+            cancelButton: "btn btn-ghost"
+        },
+
+        html: `
+        <div class="swal-step-bar">
+            ${buildStepBar(1)}
+        </div>
+
+        <div class="swal-modal-header">
+            <h3>오픈일 선택</h3>
+            <p>매장 오픈 예정일을 선택해주세요</p>
+        </div>
+
+        <input id="flatpickrInput" 
+               class="custom-date-input"
+               placeholder="날짜 선택">
+        `,
+
+        didOpen: () => {
+            const input = document.getElementById("flatpickrInput");
+
+            fp = flatpickr(input, {
+                locale: flatpickr.l10ns.ko,
+                defaultDate: selectedDate,
+                dateFormat: "Y-m-d",
+                allowInput: true,
+                clickOpens: false,
+
+                onChange(selectedDates, dateStr, instance) {
+                    if (!selectedDates.length) return;
+
+                    selectedDate = dateStr;
+                    instance.close();
+                },
+
+                onDayCreate(dObj, dStr, fp, dayElem) {
+                    const date = fp.formatDate(dayElem.dateObj, "Y-m-d");
+                    const map = getHolidayMap(dayElem.dateObj.getFullYear());
+
+                    if (map[date]) {
+                        dayElem.classList.add("holiday");
+                        dayElem.title = map[date].join(", ");
+                    }
+                }
+            });
+
+            // toggle
+            input.onclick = (e) => {
+                e.stopPropagation();
+                fp.isOpen ? fp.close() : fp.open();
+            };
+        },
+
+        willClose: () => {
+            fp?.destroy();
+            fp = null;
+        },
+
+        preConfirm() {
+            if (!selectedDate) {
+                Swal.showValidationMessage("날짜를 선택해주세요");
+                setTimeout(() => {
+                    const el = Swal.getValidationMessage();
+                    if (el) {
+                        el.style.opacity = "0";
+
+                        setTimeout(() => {
+                            el.style.display = "none";
+                            el.style.opacity = "1";
+                        }, 250);
+                    }
+                }, 1200);
+
+                return false;
+            }
+
+            return selectedDate;
+        }
+    });
+
+    if (!step1.isConfirmed) return;
+    const date = step1.value;
+
+    // ── STEP 2: 확인 ──────────────────────────
+    const step2 = await Swal.fire({
+        width: 420,
+        showCancelButton: true,
+        confirmButtonText: "저장하기",
+        cancelButtonText: "← 이전",
+        buttonsStyling: false,
+
+        customClass: {
+            popup: "swal-custom",
+            confirmButton: "btn btn-primary",
+            cancelButton: "btn btn-ghost"
+        },
+
+        html: `
+        <div class="swal-step-bar">
+            ${buildStepBar(2)}
+        </div>
+
+        <div class="swal-modal-header">
+            <h3>오픈일 확인</h3>
+            <p>선택하신 날짜가 맞으면 저장하세요</p>
+        </div>
+
+        <div class="swal-confirm-card">
+            <div class="swal-confirm-icon">📅</div>
+            <div>
+                <div class="swal-confirm-date">
+                    ${formatDateKo(date)}
+                </div>
+                <div class="swal-confirm-meta">
+                    오픈 예정일
+                </div>
+            </div>
+        </div>
+        `
+    });
+
+    // 이전 버튼 → 다시 STEP1
+    if (step2.dismiss === Swal.DismissReason.cancel) {
+        return openDatePicker(store);
+    }
+
+    if (!step2.isConfirmed) return;
+
+    // ── 과거 날짜 체크 ─────────────────────────
+    const selected = new Date(date);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    if (selected < now) {
+        await Swal.fire({
+            icon: "warning",
+            title: "과거 날짜 선택",
+            html: `과거 날짜는 <b>전체 관리자 승인</b>이 필요합니다.`,
+            showCancelButton: true,
+            confirmButtonText: "문의하기",
+            cancelButtonText: "닫기",
+            buttonsStyling: false,
+            customClass: {
+                popup: "swal-custom",
+                confirmButton: "btn btn-primary",
+                cancelButton: "btn btn-ghost"
+            }
+        });
+        return;
+    }
+
+    // ── STEP 3: 저장 ──────────────────────────
+    try {
+        await updateOpenDate(date + "T00:00:00");
+        await renderMyStoreSummary();
+
+        await Swal.fire({
+            width: 420,
+            icon: "success",
+            title: "설정 완료",
+
+            html: `
+            <div class="swal-step-bar">
+                ${buildStepBar(3)}
+            </div>
+
+            <div class="swal-confirm-card">
+<div class="swal-confirm-icon">
+<i class="fa-solid fa-circle-check"></i>
+</div>                <div>
+                    <div class="swal-confirm-date">
+                        ${formatDateKo(date)}
+                    </div>
+                    <div class="swal-confirm-meta">
+                        오픈일이 설정되었습니다
+                    </div>
+                </div>
+            </div>
+            `,
+
+            timer: 1200,
+            showConfirmButton: false
+        });
+
+    } catch (e) {
+        Swal.fire({
+            icon: "error",
+            title: "실패",
+            text: e.message
+        });
+    }
+}

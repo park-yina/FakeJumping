@@ -1,0 +1,57 @@
+/* ── Reset ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+a { text-decoration: none; color: inherit; }
+button { font: inherit; cursor: pointer; }
+
+/* ── Design tokens ──────────────────────────────── */
+:root {
+    /* surface */
+    --bg:         #0c0e14;
+    --surface-1:  #13161f;
+    --surface-2:  #191d29;
+    --surface-3:  #1f2435;
+
+    /* border */
+    --border-1:   rgba(255,255,255,0.06);
+    --border-2:   rgba(255,255,255,0.10);
+
+    /* brand */
+    --violet:     #7b6ef6;
+    --violet-dim: rgba(123,110,246,0.12);
+    --violet-glow:rgba(123,110,246,0.20);
+
+    /* semantic */
+    --amber:      #f0a535;
+    --amber-dim:  rgba(240,165,53,0.10);
+    --rose:       #e05c8a;
+    --rose-dim:   rgba(224,92,138,0.10);
+    --teal:       #38c9a0;
+    --teal-dim:   rgba(56,201,160,0.10);
+
+    /* text */
+    --txt-1:      #e4e6ed;
+    --txt-1-5: #aeb4c3;
+    --txt-2:      #7e8799;
+    --txt-3:      #4a5163;
+
+    /* layout */
+    --sidebar-w:  220px;
+    --radius-sm:  6px;
+    --radius-md:  10px;
+    --radius-lg:  14px;
+
+    /* font */
+    --font:       'IBM Plex Sans KR', sans-serif;
+    --mono:       'IBM Plex Mono', monospace;
+}
+
+/* ── Base ───────────────────────────────────────── */
+body {
+    font-family: var(--font);
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--txt-1);
+    display: flex;
+    min-height: 100vh;
+    line-height: 1.5;
+}
