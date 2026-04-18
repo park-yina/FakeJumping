@@ -15,5 +15,6 @@ public class Store {
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime closedAt;
+    private LocalDateTime openAt;
 
 }

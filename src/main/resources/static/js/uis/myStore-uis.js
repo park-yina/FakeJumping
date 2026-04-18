@@ -151,28 +151,23 @@ async function openDatePicker(store) {
         confirmButtonText: "다음 →",
         cancelButtonText: "취소",
         buttonsStyling: false,
-
         customClass: {
             popup: "swal-custom",
             confirmButton: "btn btn-primary",
             cancelButton: "btn btn-ghost"
         },
-
         html: `
         <div class="swal-step-bar">
             ${buildStepBar(1)}
         </div>
-
         <div class="swal-modal-header">
             <h3>오픈일 선택</h3>
             <p>매장 오픈 예정일을 선택해주세요</p>
         </div>
-
         <input id="flatpickrInput" 
                class="custom-date-input"
                placeholder="날짜 선택">
         `,
-
         didOpen: () => {
             const input = document.getElementById("flatpickrInput");
 
@@ -185,7 +180,6 @@ async function openDatePicker(store) {
 
                 onChange(selectedDates, dateStr, instance) {
                     if (!selectedDates.length) return;
-
                     selectedDate = dateStr;
                     instance.close();
                 },
@@ -201,36 +195,20 @@ async function openDatePicker(store) {
                 }
             });
 
-            // toggle
             input.onclick = (e) => {
                 e.stopPropagation();
                 fp.isOpen ? fp.close() : fp.open();
             };
         },
-
         willClose: () => {
             fp?.destroy();
             fp = null;
         },
-
         preConfirm() {
             if (!selectedDate) {
                 Swal.showValidationMessage("날짜를 선택해주세요");
-                setTimeout(() => {
-                    const el = Swal.getValidationMessage();
-                    if (el) {
-                        el.style.opacity = "0";
-
-                        setTimeout(() => {
-                            el.style.display = "none";
-                            el.style.opacity = "1";
-                        }, 250);
-                    }
-                }, 1200);
-
                 return false;
             }
-
             return selectedDate;
         }
     });
@@ -245,23 +223,19 @@ async function openDatePicker(store) {
         confirmButtonText: "저장하기",
         cancelButtonText: "← 이전",
         buttonsStyling: false,
-
         customClass: {
             popup: "swal-custom",
             confirmButton: "btn btn-primary",
             cancelButton: "btn btn-ghost"
         },
-
         html: `
         <div class="swal-step-bar">
             ${buildStepBar(2)}
         </div>
-
         <div class="swal-modal-header">
             <h3>오픈일 확인</h3>
             <p>선택하신 날짜가 맞으면 저장하세요</p>
         </div>
-
         <div class="swal-confirm-card">
             <div class="swal-confirm-icon">📅</div>
             <div>
@@ -276,74 +250,92 @@ async function openDatePicker(store) {
         `
     });
 
-    // 이전 버튼 → 다시 STEP1
     if (step2.dismiss === Swal.DismissReason.cancel) {
         return openDatePicker(store);
     }
-
     if (!step2.isConfirmed) return;
 
     // ── 과거 날짜 체크 ─────────────────────────
-    const selected = new Date(date);
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-
-    if (selected < now) {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (date < todayStr) {
         await Swal.fire({
             icon: "warning",
             title: "과거 날짜 선택",
             html: `과거 날짜는 <b>전체 관리자 승인</b>이 필요합니다.`,
-            showCancelButton: true,
-            confirmButtonText: "문의하기",
-            cancelButtonText: "닫기",
-            buttonsStyling: false,
-            customClass: {
-                popup: "swal-custom",
-                confirmButton: "btn btn-primary",
-                cancelButton: "btn btn-ghost"
-            }
+            showConfirmButton: true
         });
         return;
     }
 
-    // ── STEP 3: 저장 ──────────────────────────
+    // ── STEP 3: 저장 (force 포함 핵심 로직) ─────
     try {
-        await updateOpenDate(date + "T00:00:00");
-        await renderMyStoreSummary();
-
-        await Swal.fire({
-            width: 420,
-            icon: "success",
-            title: "설정 완료",
-
-            html: `
-            <div class="swal-step-bar">
-                ${buildStepBar(3)}
-            </div>
-
-            <div class="swal-confirm-card">
-<div class="swal-confirm-icon">
-<i class="fa-solid fa-circle-check"></i>
-</div>                <div>
-                    <div class="swal-confirm-date">
-                        ${formatDateKo(date)}
-                    </div>
-                    <div class="swal-confirm-meta">
-                        오픈일이 설정되었습니다
-                    </div>
-                </div>
-            </div>
-            `,
-
-            timer: 1200,
-            showConfirmButton: false
-        });
+        await updateOpenDate(date + "T00:00:00", false);
 
     } catch (e) {
-        Swal.fire({
-            icon: "error",
-            title: "실패",
-            text: e.message
-        });
+
+        // 🔥 운영중 → 미래 변경
+        if (e.code === "OPERATING_TO_FUTURE") {
+
+            const confirm = await Swal.fire({
+                icon: "warning",
+                title: "오픈일 변경",
+                html: `
+                    운영 중 매장의 오픈일을 미래로 변경하면<br>
+                    <b>게임 데이터 및 통계에 영향</b>이 있을 수 있습니다.<br><br>
+                    계속 진행하시겠습니까?
+                `,
+                showCancelButton: true,
+                confirmButtonText: "강제 변경",
+                cancelButtonText: "취소",
+                buttonsStyling: false,
+                customClass: {
+                    popup: "swal-custom",
+                    confirmButton: "btn btn-danger",
+                    cancelButton: "btn btn-ghost"
+                }
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            // 🔥 force 재요청
+            await updateOpenDate(date + "T00:00:00", true);
+
+        } else {
+            await Swal.fire({
+                icon: "error",
+                title: "실패",
+                text: e.message || "오픈 날짜 설정 실패"
+            });
+            return;
+        }
     }
+
+    // ── 성공 처리 ──────────────────────────
+    await renderMyStoreSummary();
+
+    await Swal.fire({
+        width: 420,
+        icon: "success",
+        title: "설정 완료",
+        html: `
+        <div class="swal-step-bar">
+            ${buildStepBar(3)}
+        </div>
+        <div class="swal-confirm-card">
+            <div class="swal-confirm-icon">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+                <div class="swal-confirm-date">
+                    ${formatDateKo(date)}
+                </div>
+                <div class="swal-confirm-meta">
+                    오픈일이 설정되었습니다
+                </div>
+            </div>
+        </div>
+        `,
+        timer: 1200,
+        showConfirmButton: false
+    });
 }

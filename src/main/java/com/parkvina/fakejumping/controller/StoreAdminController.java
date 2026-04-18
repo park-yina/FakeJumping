@@ -61,7 +61,8 @@ public class StoreAdminController {
 
         MyStoreSummary result = myStoreService.updateOpenDate(
                 adminId,
-                request.getOpenAt()
+                request.getOpenAt(),
+                request.getForce()
         );
 
         return ResponseEntity.ok(result);

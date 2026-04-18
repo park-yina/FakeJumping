@@ -7,7 +7,8 @@ export async function fetchMyStoreMe() {
     if (!res.ok) throw res;
     return res.json();
 }
-export async function updateOpenDate(openAt) {
+
+export async function updateOpenDate(openAt, force = false) {
     try {
         const res = await fetch("/api/store/me/open-date", {
             method: "PUT",
@@ -16,17 +17,19 @@ export async function updateOpenDate(openAt) {
                 Authorization: "Bearer " + localStorage.getItem("accessToken")
             },
             body: JSON.stringify({
-                openAt: openAt
+                openAt: openAt,
+                force: force
             })
         });
 
         if (!res.ok) {
-            throw new Error("오픈 날짜 수정 실패");
+            const err = await res.json();
+
+            throw err;
         }
 
         const data = await res.json();
 
-        // 성공 알림
         await Swal.fire({
             icon: "success",
             title: "오픈 날짜 설정 완료",
@@ -39,10 +42,14 @@ export async function updateOpenDate(openAt) {
     } catch (e) {
         console.error(e);
 
+        if (e.code === "OPERATING_TO_FUTURE") {
+            return Promise.reject(e);
+        }
+
         await Swal.fire({
             icon: "error",
             title: "오픈 날짜 설정 실패",
-            text: "다시 시도해주세요."
+            text: e.message || "다시 시도해주세요."
         });
 
         throw e;

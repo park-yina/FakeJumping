@@ -9,5 +9,5 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class OpenDateRequest {
     private LocalDateTime openAt;
-
+    private Boolean force;
 }
