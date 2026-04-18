@@ -1,4 +1,4 @@
-import {fetchMyStoreMe} from "../apis/myStore-apis.js";
+import {fetchMyStoreMe, updateOpenDate} from "../apis/myStore-apis.js";
 import {formatDate, navigate} from "../utils/utils.js";
 import {getHolidayMap} from "../calendar/holidays.js";
 
@@ -146,7 +146,7 @@ async function openDatePicker(store) {
 
     // ── STEP 1: 날짜 선택 ──────────────────────
     const step1 = await Swal.fire({
-        width: 420,
+        width: 470,
         showCancelButton: true,
         confirmButtonText: "다음 →",
         cancelButtonText: "취소",

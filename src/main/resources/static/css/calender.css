@@ -163,6 +163,24 @@
     background: var(--rose);
     border-radius: 2px;
 }
+/* ── Month Navigation Arrow ─────────────────────────── */
+
+.flatpickr-prev-month,
+.flatpickr-next-month {
+    color: var(--txt-1) !important;   /* 🔥 밝게 */
+    fill: var(--txt-1) !important;    /* 🔥 svg 대응 */
+    opacity: 0.8;
+    transition: all 0.2s ease;
+}
+
+/* hover */
+.flatpickr-prev-month:hover,
+.flatpickr-next-month:hover {
+    color: var(--violet) !important;
+    fill: var(--violet) !important;
+    opacity: 1;
+    transform: scale(1.1);
+}
 
 /* ── Arrow 제거 ─────────────────────────── */
 

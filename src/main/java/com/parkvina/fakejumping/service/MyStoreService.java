@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Service
@@ -35,7 +36,7 @@ public class MyStoreService {
             throw new RuntimeException("오픈일은 필수입니다.");
         }
 
-        if (openAt.isBefore(LocalDateTime.now())) {
+        if (openAt.toLocalDate().isBefore(LocalDate.now())) {
             throw new RuntimeException("과거 날짜로 오픈을 원할 때에는 전체 관리자에게 문의해주세요");
         }
 
