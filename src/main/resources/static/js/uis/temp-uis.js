@@ -1,4 +1,4 @@
-import {formatDate, navigate, resetPassword, sortByDateAsc, sortByDateDesc, sortByStore} from "./utils.js";
+import {formatDate, navigate, resetPassword, sortByDateAsc, sortByDateDesc, sortByStore} from "../utils/utils.js";
 
 export function renderTest(title = "기능 준비중") {
     document.getElementById("page-title").textContent = title;

@@ -1,7 +1,7 @@
-import { createStoreApi } from "./store-api.js";
-import {renderHome, renderTempSummary} from "./common-uis.js";
-import {renderStoreSummary,renderRegionSummary} from "./store-uis.js";
-import {navigate, sortByDateAsc, sortByDateDesc, sortByStore} from "./utils.js";
+import { createStoreApi } from "./apis/store-api.js";
+import { renderHome, renderTempSummary } from "./uis/common-uis.js";
+import {renderStoreSummary,renderRegionSummary} from "./uis/store-uis.js";
+import {navigate, sortByDateAsc, sortByDateDesc, sortByStore} from "./utils/utils.js";
 
 
 async function checkLogin() {

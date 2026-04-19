@@ -1,0 +1,198 @@
+/* ── Flatpickr (FINAL) ─────────────────────────── */
+
+.flatpickr-calendar {
+    width: 90% !important;
+    max-width: 420px !important;
+
+    background: var(--surface-1);
+    border: 1px solid var(--border-1);
+    border-radius: var(--radius-md);
+    color: var(--txt-1);
+
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+/* 내부 전체 풀기 */
+.flatpickr-innerContainer {
+    display: flex;
+    justify-content: center;
+}
+.flatpickr-rContainer {
+    width: 100%;
+    max-width: 380px;   /* 🔥 실제 날짜 영역 */
+    margin: 0 auto;
+}
+.flatpickr-days,
+.dayContainer,
+.flatpickr-weekdaycontainer {
+    width: 100% !important;
+    min-width: 100% !important;
+}
+
+/* 🔥 핵심: grid 재정의 */
+.dayContainer,
+.flatpickr-weekdaycontainer {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+/* ── Header ─────────────────────────── */
+
+.flatpickr-months {
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border-1);
+}
+
+.flatpickr-current-month {
+    color: var(--txt-1) !important;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+/* ── Weekday ─────────────────────────── */
+
+.flatpickr-weekdays {
+    border-bottom: 1px solid var(--border-1);
+    padding-bottom: 6px;
+    margin-bottom: 4px;
+    margin-top:3%;
+}
+
+.flatpickr-weekday {
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--txt-1-5) !important;
+}
+
+/* 일요일 */
+.flatpickr-weekday:nth-child(1) {
+    color: var(--rose) !important;
+}
+
+/* 토요일 */
+.flatpickr-weekday:nth-child(7) {
+    color: var(--violet) !important;
+}
+
+/* ── Day Cell ─────────────────────────── */
+
+.flatpickr-day {
+    width: 100% !important;   /* 🔥 핵심 */
+    max-width: none !important;
+
+    height: 46px;
+    line-height: 46px;
+
+    font-size: 16px;
+    font-weight: 500;
+
+    border-radius: 10px;
+    margin: 2px 0;
+
+    text-align: center;
+    position: relative;
+    color: var(--txt-1) !important;
+}
+
+/* hover */
+.flatpickr-day:hover {
+    background: var(--violet-dim);
+}
+
+/* 선택 */
+.flatpickr-day.selected {
+    background: var(--violet) !important;
+    color: #fff !important;
+    font-weight: 600;
+    box-shadow: 0 0 0 2px var(--violet-dim);
+}
+
+/* 오늘 */
+.flatpickr-day.today {
+    border: 1px solid var(--violet);
+}
+
+/* 이전/다음 달 */
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+    color: var(--txt-2) !important;
+    opacity: 0.35;
+}
+
+/* 비활성 */
+.flatpickr-day.disabled {
+    color: var(--txt-3) !important;
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+/* ── Weekend ─────────────────────────── */
+
+/* 일요일 */
+.flatpickr-day:nth-child(7n+1) {
+    color: var(--rose) !important;
+    font-weight: 600;
+}
+
+/* 토요일 */
+.flatpickr-day:nth-child(7n) {
+    color: var(--violet) !important;
+}
+.flatpickr-day:not(.selected):nth-child(7n+1) {
+    color: var(--rose) !important;
+    font-weight: 600;
+}
+
+.flatpickr-day:not(.selected):nth-child(7n) {
+    color: var(--violet) !important;
+}
+/* ── Holiday ─────────────────────────── */
+
+.flatpickr-day.holiday {
+    background: rgba(224,92,138,0.08);
+    color: var(--rose) !important;
+}
+
+/* underline */
+.flatpickr-day.holiday::after {
+    content: "";
+    position: absolute;
+
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    width: 14px;
+    height: 2px;
+
+    background: var(--rose);
+    border-radius: 2px;
+}
+/* ── Month Navigation Arrow ─────────────────────────── */
+
+.flatpickr-prev-month,
+.flatpickr-next-month {
+    color: var(--txt-1) !important;   /* 🔥 밝게 */
+    fill: var(--txt-1) !important;    /* 🔥 svg 대응 */
+    opacity: 0.8;
+    transition: all 0.2s ease;
+}
+
+/* hover */
+.flatpickr-prev-month:hover,
+.flatpickr-next-month:hover {
+    color: var(--violet) !important;
+    fill: var(--violet) !important;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* ── Arrow 제거 ─────────────────────────── */
+
+.flatpickr-calendar.arrowTop::before,
+.flatpickr-calendar.arrowTop::after,
+.flatpickr-calendar.arrowBottom::before,
+.flatpickr-calendar.arrowBottom::after {
+    display: none !important;
+}

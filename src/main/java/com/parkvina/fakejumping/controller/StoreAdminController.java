@@ -1,19 +1,23 @@
 package com.parkvina.fakejumping.controller;
 
-import com.parkvina.fakejumping.dto.ResetPasswordRequest;
-import com.parkvina.fakejumping.dto.ResetPasswordResult;
+import com.parkvina.fakejumping.dto.store.ContactRequest;
 import com.parkvina.fakejumping.dto.store.MyStoreSummary;
+import com.parkvina.fakejumping.dto.store.OpenDateRequest;
 import com.parkvina.fakejumping.entity.Admin;
+import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.StoreMapper;
+import com.parkvina.fakejumping.service.DiscordService;
+import com.parkvina.fakejumping.service.MyStoreService;
 import com.parkvina.fakejumping.service.StoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/store")
@@ -22,6 +26,8 @@ public class StoreAdminController {
     private final StoreService storeService;
     private final StoreMapper storeMapper;
     private final AdminMapper adminMapper;
+    private final MyStoreService myStoreService;
+    private final DiscordService discordService;
 
     @PreAuthorize("hasRole('STORE_ADMIN')")
     @GetMapping("/me")
@@ -46,5 +52,34 @@ public class StoreAdminController {
             throw new RuntimeException("매장 정보를 찾을 수 없습니다.");
         }
         return ResponseEntity.ok(summary);
+    }
+    @PreAuthorize("hasRole('STORE_ADMIN')")
+    @PostMapping("/contact")
+    public ResponseEntity<Void> contact(
+            Authentication auth,
+            @RequestBody ContactRequest req
+    ) {
+        Long adminId = (Long) auth.getPrincipal();
+
+       myStoreService.sendContact(adminId, req.getContent());
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('STORE_ADMIN')")
+    @PutMapping("/me/open-date")
+    public ResponseEntity<MyStoreSummary> updateOpenDate(
+            Authentication authentication,
+            @RequestBody OpenDateRequest request
+    ) {
+        Long adminId = (Long) authentication.getPrincipal();
+
+        MyStoreSummary result = myStoreService.updateOpenDate(
+                adminId,
+                request.getOpenAt(),
+                request.getForce()
+        );
+
+        return ResponseEntity.ok(result);
     }
 }
