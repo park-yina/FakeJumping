@@ -1,4 +1,9 @@
-import { fetchStoreSummary, fetchRegionSummary, fetchPendingStoreSummary } from "../apis/store-api.js";
+import {
+    fetchStoreSummary,
+    fetchRegionSummary,
+    fetchPendingStoreSummary,
+    fetchMonthlySummary
+} from "../apis/store-api.js";
 import {searchAddress, navigate, createStoreHandler} from "../utils/utils.js";
 
 export function renderCreateStore() {
@@ -115,7 +120,7 @@ export async function renderPendingStoreSummary() {
             <div class="card-header">
                 <div class="card-title">
                     <span class="dot dot-rose"></span>
-                    오픈 예정 스토어
+                    오픈 미정 매장
                 </div>
                 <button class="refresh-btn" title="새로고침">
                     <i class="fa-solid fa-arrows-rotate"></i>
@@ -123,12 +128,17 @@ export async function renderPendingStoreSummary() {
             </div>
 
             <div class="stat-value">${data.count}</div>
-            <div class="stat-label">오픈 예정 매장</div>
+            <div class="stat-label">오픈일 미정</div>
 
             <div class="badge-container">
-                ${data.pendingStores.map(d => `
-                    <span class="badge badge-rose">${d.name} (${d.region})</span>
-                `).join("")}
+                ${data.pendingStores.length === 0
+            ? `<span class="text-muted">모든 매장이 오픈일이 설정되었습니다</span>`
+            : data.pendingStores.map(d => `
+                        <span class="badge badge-rose">
+                            ${d.name} (${d.region})
+                        </span>
+                    `).join("")
+        }
             </div>
         </div>
         `;
@@ -136,6 +146,7 @@ export async function renderPendingStoreSummary() {
         el.querySelector(".pending-card").addEventListener("click", (e) => {
             navigate("pending-store", e.currentTarget);
         });
+
         el.querySelector(".refresh-btn").addEventListener("click", (e) => {
             e.stopPropagation();
             renderPendingStoreSummary();
@@ -147,7 +158,7 @@ export async function renderPendingStoreSummary() {
             <div class="card">
                 <div class="error-card">
                     <i class="fa-solid fa-triangle-exclamation"></i>
-                    오픈 예정 데이터 불러오기 실패
+                    오픈 미정 데이터 불러오기 실패
                 </div>
             </div>
         `;
@@ -203,7 +214,87 @@ export async function renderRegionSummary() {
         `;
     }
 }
+export async function renderMonthlySummary() {
+    try {
+        const data = await fetchMonthlySummary();
+        const el = document.getElementById("monthly-summary");
+        console.log(data);
+        const openedNames = (data.opened || []).map(s => s.name);
+        const upcomingNames = (data.upcoming || []).map(s => s.name);
 
+        const openedPreview = openedNames.slice(0, 3).join(" / ");
+        const upcomingPreview = upcomingNames.slice(0, 3).join(" / ");
+
+        const openedMore = openedNames.length - 3;
+        const upcomingMore = upcomingNames.length - 3;
+
+        el.innerHTML = `
+        <div class="card monthly-card">
+
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="dot dot-teal"></span>
+                    이달 매장 현황
+                </div>
+                <button class="refresh-btn" title="새로고침">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+
+            <div class="monthly-grid">
+
+                <!-- 이달 오픈 -->
+                <div class="monthly-box">
+                    <div class="label">이달 오픈</div>
+                    <div class="value text-teal">${data.openedCount}</div>
+                    <div class="tags">
+                        ${openedNames.length === 0
+            ? `<span class="text-muted">없음</span>`
+            : `
+                                ${openedPreview}
+                                ${openedMore > 0 ? `<span class="more">+${openedMore}</span>` : ""}
+                              `
+        }
+                    </div>
+                </div>
+
+                <!-- 오픈 예정 -->
+                <div class="monthly-box">
+                    <div class="label">오픈 예정</div>
+                    <div class="value text-violet">${data.upcomingCount}</div>
+                    <div class="tags">
+                        ${upcomingNames.length === 0
+            ? `<span class="text-muted">없음</span>`
+            : `
+                                ${upcomingPreview}
+                                ${upcomingMore > 0 ? `<span class="more">+${upcomingMore}</span>` : ""}
+                              `
+        }
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        `;
+
+        // 새로고침 버튼
+        el.querySelector(".refresh-btn").addEventListener("click", (e) => {
+            e.stopPropagation();
+            renderMonthlySummary();
+        });
+
+    } catch (e) {
+        console.error(e);
+        document.getElementById("monthly-summary").innerHTML = `
+            <div class="card">
+                <div class="error-card">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    이달 매장 데이터 불러오기 실패
+                </div>
+            </div>
+        `;
+    }
+}
 export async function renderStoreSummary() {
     try {
         const data = await fetchStoreSummary();
@@ -238,7 +329,7 @@ export async function renderStoreSummary() {
         new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['운영중', '오픈 예정', '폐점', '비활성'],
+                labels: ['운영중', '오픈 예정', '폐점', '오픈 미정'],
                 datasets: [{
                     data: [
                         data.operating,

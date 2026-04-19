@@ -23,6 +23,16 @@ public class MyStoreService {
     private final PasswordEncoder passwordEncoder;
     private final DiscordService discordService;
     private final AuthService authService;
+    public void sendContact(Long adminId, String content) {
+
+        Admin admin = adminMapper.findById(adminId);
+        Store store = storeMapper.findById(admin.getStoreId());
+
+        String storeName = store.getName();
+        String requester = admin.getUsername();
+
+        discordService.sendContactRequest(requester, storeName, content);
+    }
     public MyStoreSummary myStoreSummary(Long storeId){
         return storeMapper.findMyStoreSummary(storeId);
     }

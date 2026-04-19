@@ -212,8 +212,22 @@ public class StoreService {
 
         return new PendingStoreSummary(count, stores);
     }
+    public Map<String, Object> getMonthlyOpenSummary() {
+
+        List<Store> opened = storeMapper.findThisMonthOpen();
+        List<Store> upcoming = storeMapper.findThisMonthUpcoming();
+
+        return Map.of(
+                "opened", opened,
+                "openedCount", opened.size(),
+                "upcoming", upcoming,
+                "upcomingCount", upcoming.size()
+        );
+    }
+
 
     public Map<String, Object> getStoreSummary() {
         return storeMapper.countStoreSummary();
     }
 }
+

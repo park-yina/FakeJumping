@@ -15,6 +15,18 @@ export async function createStoreApi(requestData) {
     return res.json();
 }
 
+export async function fetchMonthlySummary() {
+    const res = await fetch("/api/stores/monthly-summary", {
+        headers: {
+            Authorization: "Bearer " + localStorage.getItem("accessToken")
+        }
+    });
+
+    if (!res.ok) throw res;
+
+    return res.json();
+}
+
 export async function fetchStoreSummary() {
     const res = await fetch("/api/admin/summary-store", {
         headers: {

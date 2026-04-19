@@ -1,34 +1,36 @@
 import {fetchMyStoreMe, updateOpenDate} from "../apis/myStore-apis.js";
-import {formatDate, navigate} from "../utils/utils.js";
+import {formatDate, navigate, openContactModal} from "../utils/utils.js";
 import {getHolidayMap} from "../calendar/holidays.js";
 
-function getStatusHtml(store) {
-    if (!store.openAt) {
+function getStatusHtml(data) {
+    const open = data.openAt ? new Date(data.openAt) : null;
+    const now = new Date();
+
+    if (!open) {
         return `
-            <span class="status-item">
-                <span class="dot" style="background:gray"></span>
-                미정
-            </span>
+            <div>
+                <span class="badge badge-amber">오픈 미정</span>
+                <div style="margin-top:6px;">미정</div>
+            </div>
         `;
     }
 
-    const now = new Date();
-    const open = new Date(store.openAt);
-
     if (open > now) {
+        const dday = getDDay(data.openAt);
+
         return `
-            <span class="status-item">
-                <span class="dot dot-violet"></span>
-                오픈 예정
-            </span>
+            <div>
+                <span class="badge badge-violet">${dday}</span>
+                <div style="margin-top:6px;">오픈 예정</div>
+            </div>
         `;
     }
 
     return `
-        <span class="status-item">
-            <span class="dot dot-teal"></span>
-            운영중
-        </span>
+        <div>
+            <span class="badge badge-teal">운영중</span>
+            <div style="margin-top:6px;">운영중</div>
+        </div>
     `;
 }
 
@@ -68,7 +70,7 @@ export async function renderMyStoreSummary() {
             <div class="stat-value">${status}</div>
             <div class="stat-label">
                 ${data.openAt
-            ? `오픈일: ${formatDate(data.openAt)} (${dday})`
+            ? `오픈일: ${formatDate(data.openAt)}`
             : "오픈일 미정"}
             </div>
 
@@ -160,13 +162,27 @@ async function openDatePicker(store) {
         <div class="swal-step-bar">
             ${buildStepBar(1)}
         </div>
+
         <div class="swal-modal-header">
             <h3>오픈일 선택</h3>
             <p>매장 오픈 예정일을 선택해주세요</p>
         </div>
-        <input id="flatpickrInput" 
-               class="custom-date-input"
-               placeholder="날짜 선택">
+
+        <div class="date-input-wrapper">
+            <input id="flatpickrInput" 
+                   class="custom-date-input"
+                   placeholder="날짜 선택">
+        </div>
+
+        <div class="swal-guide-box">
+            <div class="swal-guide-text">
+                과거 날짜로 오픈일을 변경하려면 본사 관리자에게 문의해주세요.
+            </div>
+            <button id="contactAdminBtn" class="btn btn-ghost btn-sm">
+                <i class="fa-solid fa-headset"></i>
+                관리자에게 문의
+            </button>
+        </div>
         `,
         didOpen: () => {
             const input = document.getElementById("flatpickrInput");
@@ -177,6 +193,7 @@ async function openDatePicker(store) {
                 dateFormat: "Y-m-d",
                 allowInput: true,
                 clickOpens: false,
+                minDate: "today",
 
                 onChange(selectedDates, dateStr, instance) {
                     if (!selectedDates.length) return;
@@ -199,6 +216,9 @@ async function openDatePicker(store) {
                 e.stopPropagation();
                 fp.isOpen ? fp.close() : fp.open();
             };
+
+            document.getElementById("contactAdminBtn")
+                .addEventListener("click", openContactModal);
         },
         willClose: () => {
             fp?.destroy();
@@ -232,12 +252,16 @@ async function openDatePicker(store) {
         <div class="swal-step-bar">
             ${buildStepBar(2)}
         </div>
+
         <div class="swal-modal-header">
             <h3>오픈일 확인</h3>
             <p>선택하신 날짜가 맞으면 저장하세요</p>
         </div>
+
         <div class="swal-confirm-card">
-            <div class="swal-confirm-icon">📅</div>
+            <div class="swal-confirm-icon">
+                <i class="fa-regular fa-calendar-check"></i>
+            </div>
             <div>
                 <div class="swal-confirm-date">
                     ${formatDateKo(date)}
@@ -255,25 +279,12 @@ async function openDatePicker(store) {
     }
     if (!step2.isConfirmed) return;
 
-    // ── 과거 날짜 체크 ─────────────────────────
-    const todayStr = new Date().toISOString().slice(0, 10);
-    if (date < todayStr) {
-        await Swal.fire({
-            icon: "warning",
-            title: "과거 날짜 선택",
-            html: `과거 날짜는 <b>전체 관리자 승인</b>이 필요합니다.`,
-            showConfirmButton: true
-        });
-        return;
-    }
-
-    // ── STEP 3: 저장 (force 포함 핵심 로직) ─────
+    // ── STEP 3: 저장 ──────────────────────────
     try {
         await updateOpenDate(date + "T00:00:00", false);
 
     } catch (e) {
 
-        // 🔥 운영중 → 미래 변경
         if (e.code === "OPERATING_TO_FUTURE") {
 
             const confirm = await Swal.fire({
@@ -297,7 +308,6 @@ async function openDatePicker(store) {
 
             if (!confirm.isConfirmed) return;
 
-            // 🔥 force 재요청
             await updateOpenDate(date + "T00:00:00", true);
 
         } else {
@@ -321,6 +331,7 @@ async function openDatePicker(store) {
         <div class="swal-step-bar">
             ${buildStepBar(3)}
         </div>
+
         <div class="swal-confirm-card">
             <div class="swal-confirm-icon">
                 <i class="fa-solid fa-circle-check"></i>

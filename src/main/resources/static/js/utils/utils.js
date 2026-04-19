@@ -13,6 +13,59 @@ export function sortByStore(data) {
         a.storeName.localeCompare(b.storeName, 'ko')
     );
 }
+export async function openContactModal() {
+    const defaultMsg = "과거 날짜로 오픈일 변경 요청";
+
+    const { value } = await Swal.fire({
+        title: "관리자 문의",
+        input: "textarea",
+        inputValue: defaultMsg, // 🔥 기본값
+        inputLabel: "문의 내용을 입력해주세요",
+        showCancelButton: true,
+        confirmButtonText: "문의 보내기",
+        cancelButtonText: "취소",
+        buttonsStyling: false,
+        customClass: {
+            confirmButton: "btn btn-primary",
+            cancelButton: "btn btn-ghost"
+        }
+    });
+
+    if (!value) return;
+
+    if (!value) return;
+
+    try {
+        const res = await fetch("/api/store/contact", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + localStorage.getItem("accessToken")
+            },
+            body: JSON.stringify({
+                content: value
+            })
+        });
+
+        if (!res.ok) {
+            throw new Error("문의 전송 실패");
+        }
+
+        await Swal.fire({
+            icon: "success",
+            title: "문의가 접수되었습니다",
+            timer: 1200,
+            showConfirmButton: false
+        });
+
+    } catch (e) {
+        await Swal.fire({
+            icon: "error",
+            title: "문의 실패",
+            text: "다시 시도해주세요"
+        });
+    }
+}
 export async function createStoreHandler() {
     const storeName = document.getElementById("storeName").value;
     const address = document.getElementById("address").value;

@@ -107,7 +107,11 @@
     color: var(--txt-3);
     margin-top: 4px;
 }
-
+.status-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px; /* 🔥 핵심 */
+}
 /* ── Dot indicators ─────────────────────────────── */
 .dot {
     width: 6px;
@@ -148,7 +152,10 @@
 .badge-primary { background: var(--violet-dim); color: var(--violet); }
 .badge-warning { background: var(--amber-dim);  color: var(--amber); }
 .badge-danger  { background: var(--rose-dim);   color: var(--rose); }
-
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 12px;
+}
 /* ── Refresh button ─────────────────────────────── */
 .refresh-btn {
     display: flex;
@@ -254,3 +261,44 @@
 
 /* ── Misc ───────────────────────────────────────── */
 [data-clickable] { cursor: pointer; }
+.monthly-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.monthly-box {
+    background: var(--surface2);
+    padding: 14px;
+    border-radius: 10px;
+}
+
+.label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+}
+
+.value {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.tags {
+    font-size: 12px;
+    margin-top: 6px;
+    color: var(--text-dim);
+}
+
+.more {
+    margin-left: 6px;
+    color: var(--primary);
+}
+.text-teal {
+    color: var(--teal);
+}
+
+.text-violet {
+    color: var(--violet);
+}

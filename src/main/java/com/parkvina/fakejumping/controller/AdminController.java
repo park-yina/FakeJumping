@@ -65,6 +65,14 @@ public class AdminController {
         PendingStoreSummary pendingStoreSummary = storeService.getPendingStoreSummary(limit);
         return ResponseEntity.status(HttpStatus.OK).body(pendingStoreSummary);
     }
+    @GetMapping("/stores/monthly-summary")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> getMonthlySummary() {
+
+        Map<String, Object> result = storeService.getMonthlyOpenSummary();
+
+        return ResponseEntity.status(HttpStatus.OK).body(result);
+    }
 
     @GetMapping("/admin/temp")
     @PreAuthorize("hasRole('SUPER_ADMIN')")

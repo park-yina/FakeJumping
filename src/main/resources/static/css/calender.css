@@ -103,9 +103,8 @@
 /* 선택 */
 .flatpickr-day.selected {
     background: var(--violet) !important;
-    border-color: var(--violet) !important;
     color: #fff !important;
-
+    font-weight: 600;
     box-shadow: 0 0 0 2px var(--violet-dim);
 }
 
@@ -140,7 +139,14 @@
 .flatpickr-day:nth-child(7n) {
     color: var(--violet) !important;
 }
+.flatpickr-day:not(.selected):nth-child(7n+1) {
+    color: var(--rose) !important;
+    font-weight: 600;
+}
 
+.flatpickr-day:not(.selected):nth-child(7n) {
+    color: var(--violet) !important;
+}
 /* ── Holiday ─────────────────────────── */
 
 .flatpickr-day.holiday {

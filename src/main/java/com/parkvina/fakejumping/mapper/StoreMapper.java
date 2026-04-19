@@ -78,7 +78,26 @@ public interface StoreMapper {
             @Param("city") String city,
             @Param("district") String district
     );
-
+    @Select("""
+SELECT *
+FROM store
+WHERE is_active = 1
+  AND open_at IS NOT NULL
+  AND open_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
+  AND open_at < DATE_FORMAT(NOW() + INTERVAL 1 MONTH, '%Y-%m-01')
+  AND open_at <= NOW()
+""")
+    List<Store> findThisMonthOpen();
+    @Select("""
+SELECT *
+FROM store
+WHERE is_active = 1
+  AND open_at IS NOT NULL
+  AND open_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
+  AND open_at < DATE_FORMAT(NOW() + INTERVAL 1 MONTH, '%Y-%m-01')
+  AND open_at > NOW()
+""")
+    List<Store> findThisMonthUpcoming();
     List<RegionSummary> regionSummary();
 
     List<PendingStoreInfo> findPendingStoreInfo(@Param("limit") Integer limit);
