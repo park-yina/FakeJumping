@@ -23,6 +23,16 @@ public class AdminController {
     public Map<String, Object> getStoreSummary() {
         return storeService.getStoreSummary();
     }
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @GetMapping()
+    public ResponseEntity<List<StoreResult>>findStores(
+            @RequestParam(required = false)String region,
+            @RequestParam(required = false)String city,
+            @RequestParam(required = false)String district
+    ){
+        List<StoreResult> result = storeService.getAllStoreList(region, city, district);
+        return ResponseEntity.status(HttpStatus.OK).body(result);
+    }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping("/admin/reset-password")
