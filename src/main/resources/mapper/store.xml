@@ -16,6 +16,7 @@
     <select id="findStores" resultType="com.parkvina.fakejumping.entity.Store">
         SELECT *
         FROM store
+        WHERE 1=1
 
         <if test="region != null and region != ''">
             AND region = #{region}
@@ -23,10 +24,6 @@
 
         <if test="city != null and city != ''">
             AND city = #{city}
-        </if>
-
-        <if test="city == null or city == ''">
-            AND city IS NULL
         </if>
 
         <if test="district != null and district != ''">
@@ -44,34 +41,40 @@
 
     </select>
     <select id="countStoreSummary" resultType="map">
-            SELECT
-            COUNT(*) AS total,
+        SELECT
+        COUNT(*) AS total,
 
-            SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) AS active,
+        -- 운영중
+        SUM(CASE
+        WHEN is_active = 1
+        AND closed_at IS NULL
+        AND open_at IS NOT NULL
+        AND open_at <![CDATA[ <= ]]> NOW()        THEN 1 ELSE 0
+        END) AS operating,
 
-            -- 비활성(테스트/폐점 포함)
-            SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) AS inactive,
+        -- 오픈 예정
+        SUM(CASE
+        WHEN is_active = 1
+        AND closed_at IS NULL
+        AND open_at > NOW()
+        THEN 1 ELSE 0
+        END) AS scheduled,
 
-            SUM(CASE
-            WHEN is_active = 1
-            AND closed_at IS NULL
-            AND open_at IS NOT NULL
-            AND open_at <![CDATA[ <= ]]> NOW()
-            THEN 1 ELSE 0
-            END) AS operating,
+        -- 폐점
+        SUM(CASE
+        WHEN closed_at IS NOT NULL
+        THEN 1 ELSE 0
+        END) AS closed,
 
-            SUM(CASE
-            WHEN is_active = 1
-            AND open_at > NOW()
-            THEN 1 ELSE 0
-            END) AS scheduled,
+        -- 오픈 미정
+        SUM(CASE
+        WHEN is_active = 1
+        AND closed_at IS NULL
+        AND open_at IS NULL
+        THEN 1 ELSE 0
+        END) AS inactive
 
-            SUM(CASE
-            WHEN closed_at IS NOT NULL
-            THEN 1 ELSE 0
-            END) AS closed
-
-            FROM store
+        FROM store
     </select>
     <update id="updateOpenAt">
         UPDATE store
