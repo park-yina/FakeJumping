@@ -91,7 +91,7 @@ SUPER_ADMIN을 중심으로 매장 생성, 관리자 관리, 통계 시각화를
 
 ## 📷 화면 예시 (전체 관리)
 <img width="1918" height="881" alt="image" src="https://github.com/user-attachments/assets/6b3330b6-02e7-44e2-87dd-25e4f10fa250" />
-<img width="1919" height="888" alt="image" src="https://github.com/user-attachments/assets/925b0c86-3b4c-4ea5-baac-12b2e3811b6a" />
+<img width="1917" height="892" alt="image" src="https://github.com/user-attachments/assets/1de23956-f25c-438b-8ede-76c34fddf1de" />
 
 
 ## 🛠 기술 스택
