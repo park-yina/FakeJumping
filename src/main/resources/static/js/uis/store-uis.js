@@ -218,7 +218,6 @@ export async function renderMonthlySummary() {
     try {
         const data = await fetchMonthlySummary();
         const el = document.getElementById("monthly-summary");
-        console.log(data);
         const openedNames = (data.opened || []).map(s => s.name);
         const upcomingNames = (data.upcoming || []).map(s => s.name);
 
@@ -312,7 +311,10 @@ export async function renderStoreSummary() {
                 </button>
                 </div>
                 <canvas id="storeChart"></canvas>
-                <div class="store-meta">전체 ${data.total} &nbsp;·&nbsp; 운영 ${data.active} &nbsp;·&nbsp; 폐점 ${data.inactive}</div>
+                <div class="store-meta">  전체 ${data.total} &nbsp;·&nbsp;
+  운영 ${data.operating} &nbsp;·&nbsp;
+  예정 ${data.scheduled} &nbsp;·&nbsp;
+  폐점 ${data.closed}</div>
                 <div class="store-hint"><i class="fa-solid fa-arrow-pointer"></i> 클릭하면 매장 목록으로 이동</div>
             </div>
         `;
