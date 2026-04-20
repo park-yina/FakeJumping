@@ -8,6 +8,7 @@ import com.parkvina.fakejumping.dto.store.StoreResult;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.enums.AdminRole;
+import com.parkvina.fakejumping.enums.StoreStatus;
 import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.StoreMapper;
 import com.parkvina.fakejumping.security.AuthService;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,14 +36,38 @@ public class StoreService {
     private final PasswordEncoder passwordEncoder;
     private final DiscordService discordService;
     private final AuthService authService;
+    private StoreStatus resolveStatus(Store store) {
+        LocalDateTime now = LocalDateTime.now();
 
+        // 폐점
+        if (store.getClosedAt() != null) {
+            return StoreStatus.CLOSED;
+        }
+
+        // 오픈 예정
+        if (store.getIsActive()
+                && store.getOpenAt() != null
+                && store.getOpenAt().isAfter(now)) {
+            return StoreStatus.SCHEDULED;
+        }
+
+        // 운영중
+        if (store.getIsActive()
+                && store.getOpenAt() != null
+                && !store.getOpenAt().isAfter(now)) {
+            return StoreStatus.OPERATING;
+        }
+
+        // 오픈 미정
+        if (store.getIsActive()
+                && store.getOpenAt() == null) {
+            return StoreStatus.NOT_OPENED;
+        }
+
+        return StoreStatus.NOT_OPENED;
+    }
     public String generateTempPassword(int len) {
         SecureRandom secureRandom = new SecureRandom();
-        /*
-         * 1. 소문자의 범위 : 97 ~ 122
-         * 2. 대문자의 범위 : 65 ~ 90
-         * 3. 일부 허용 특수문자 : !@#$%^&_=+
-         */
         String tempPasswordStr = IntStream.concat(
                         IntStream.concat(
                                 IntStream.rangeClosed(65, 90),
@@ -171,18 +197,21 @@ public class StoreService {
         region = normalize(region);
         city = normalize(city);
         district = normalize(district);
-
         return storeMapper.findStores(region, city, district)
                 .stream()
-                .map(store -> new StoreResult(
-                        store.getId(),
-                        store.getName(),
-                        store.getRegion(),
-                        Optional.ofNullable(store.getCity()).orElse(""),
-                        Optional.ofNullable(store.getDistrict()).orElse(""),
-                        store.getAddress(),
-                        store.getIsActive() ? "운영중" : "폐점"
-                ))
+                .map(store -> {
+                    StoreStatus status = resolveStatus(store);
+
+                    return new StoreResult(
+                            store.getId(),
+                            store.getName(),
+                            store.getRegion(),
+                            Optional.ofNullable(store.getCity()).orElse(""),
+                            Optional.ofNullable(store.getDistrict()).orElse(""),
+                            store.getAddress(),
+                            status
+                    );
+                })
                 .toList();
     }
     public List<String>getCityList(String region){
