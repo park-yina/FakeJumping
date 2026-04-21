@@ -69,10 +69,6 @@ export async function renderStoreListPage() {
                 page: currentPage,
                 size
             });
-            console.log(data);
-            console.log("region:", region);
-            console.log("subRegion:", subRegion);
-
             renderList(data.content);
             renderPagination(data.total);
         }

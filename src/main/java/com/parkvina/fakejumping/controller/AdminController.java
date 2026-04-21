@@ -41,12 +41,13 @@ public class AdminController {
     public ResponseEntity<Map<String, Object>> findStores(
             @RequestParam(required = false) String region,
             @RequestParam(required = false) String subRegion,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
 
         Map<String, Object> result =
-                storeService.getStoresWithPaging(region, subRegion, page, size);
+                storeService.getStoresWithPaging(region, subRegion, status, page, size);
 
         return ResponseEntity.ok(result);
     }

@@ -2,10 +2,10 @@ import {renderHome} from "../uis/common-uis.js";
 import {renderTemp, renderTempList, renderTest} from "../uis/temp-uis.js";
 import {renderCreateStore, renderStoreListPage} from "../uis/store-uis.js";
 import {createStoreApi, fetchRegions} from "../apis/store-api.js";
+import {logout} from "../admin-dashboard.js";
 export function sortByDateDesc(data) {
     return [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
-
 export function sortByDateAsc(data) {
     return [...data].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 }
@@ -227,13 +227,47 @@ export function setActive(el) {
 
     el.classList.add('active');
 }
-async function renderRegions() {
-    const el = document.getElementById("regionFilter");
+export async function fetchWithAuth(url, options = {}) {
+    let token = localStorage.getItem("accessToken");
 
-    const regions = await fetchRegions();
+    options.headers = {
+        ...options.headers,
+        Authorization: "Bearer " + token
+    };
 
-    el.innerHTML = `
-        <option value="">전체 지역</option>
-        ${regions.map(r => `<option value="${r}">${r}</option>`).join("")}
-    `;
+    let res = await fetch(url, {
+        ...options,
+        credentials: "include"
+    });
+
+    // 🔥 access 만료
+    if (res.status === 401) {
+        const refreshRes = await fetch("/auth/refresh", {
+            method: "POST",
+            credentials: "include"
+        });
+
+        if (!refreshRes.ok) {
+            logout();
+            return;
+        }
+
+        const data = await refreshRes.json();
+        localStorage.setItem("accessToken", data.accessToken);
+
+        // 🔥 재요청
+        options.headers.Authorization = "Bearer " + data.accessToken;
+
+        res = await fetch(url, {
+            ...options,
+            credentials: "include"
+        });
+
+        if (res.status === 401) {
+            logout();
+            return;
+        }
+    }
+
+    return res;
 }

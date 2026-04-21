@@ -29,6 +29,33 @@
             )
         </if>
 
+        <if test="status != null and status != ''">
+
+            <if test='"OPERATING".equals(status)'>
+                AND is_active = 1
+                AND closed_at IS NULL
+                AND open_at IS NOT NULL
+                AND open_at <![CDATA[ <= ]]> NOW()
+            </if>
+
+            <if test='"SCHEDULED".equals(status)'>
+                AND is_active = 1
+                AND closed_at IS NULL
+                AND open_at > NOW()
+            </if>
+
+            <if test='"NOT_OPENED".equals(status)'>
+                AND is_active = 1
+                AND closed_at IS NULL
+                AND open_at IS NULL
+            </if>
+
+            <if test='"CLOSED".equals(status)'>
+                AND closed_at IS NOT NULL
+            </if>
+
+        </if>
+
         ORDER BY id DESC
         LIMIT #{size} OFFSET #{offset}
     </select>
@@ -47,14 +74,33 @@
             OR (city IS NULL AND district = #{subRegion})
             )
         </if>
-    </select>
-    <select id="selectActiveStore"
-            resultType="com.parkvina.fakejumping.entity.Store"
-    >
-        SELECT *
-        FROM store
-        WHERE is_active = 1
 
+        <if test="status != null and status != ''">
+
+            <if test='"OPERATING".equals(status)'>
+                AND is_active = 1
+                AND closed_at IS NULL
+                AND open_at IS NOT NULL
+                AND open_at <![CDATA[ <= ]]> NOW()
+            </if>
+
+            <if test='"SCHEDULED".equals(status)'>
+                AND is_active = 1
+                AND closed_at IS NULL
+                AND open_at > NOW()
+            </if>
+
+            <if test='"NOT_OPENED".equals(status)'>
+                AND is_active = 1
+                AND closed_at IS NULL
+                AND open_at IS NULL
+            </if>
+
+            <if test='"CLOSED".equals(status)'>
+                AND closed_at IS NOT NULL
+            </if>
+
+        </if>
     </select>
     <select id="countStoreSummary" resultType="map">
         SELECT
