@@ -54,7 +54,6 @@ public class AuthService {
         if (admin == null) {
             throw new RuntimeException("존재하지 않는 관리자입니다.");
         }
-        // 🔥 비밀번호 암호화
         String encoded = passwordEncoder.encode(req.getNewPassword());
 
         admin.setPassword(encoded);

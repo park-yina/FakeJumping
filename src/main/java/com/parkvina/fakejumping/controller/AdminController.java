@@ -23,7 +23,33 @@ public class AdminController {
     public Map<String, Object> getStoreSummary() {
         return storeService.getStoreSummary();
     }
+    @GetMapping("/stores/regions")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<String>> getRegions() {
+        return ResponseEntity.ok(storeService.getRegionList());
+    }
 
+    @GetMapping("/stores/sub-regions")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<String>> getSubRegions(
+            @RequestParam(required = false) String region
+    ) {
+        return ResponseEntity.status(HttpStatus.OK).body(storeService.getSubRegionList(region));
+    }
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @GetMapping("/stores")
+    public ResponseEntity<Map<String, Object>> findStores(
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String subRegion,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+
+        Map<String, Object> result =
+                storeService.getStoresWithPaging(region, subRegion, page, size);
+
+        return ResponseEntity.ok(result);
+    }
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping("/admin/reset-password")
     public ResponseEntity<ResetPasswordResult> adminResetPassword(@RequestBody ResetPasswordRequest resetPasswordRequest) {
@@ -41,16 +67,6 @@ public class AdminController {
 
     }
 
-    @GetMapping("/stores")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public ResponseEntity<List<StoreResult>> getAllStores(@RequestParam(required = false) String region,
-                                                          @RequestParam(required = false) String city,
-                                                          @RequestParam(required = false) String district
-    ) {
-        List<StoreResult> storeResultList = storeService.getAllStoreList(region, city, district);
-        return ResponseEntity.status(HttpStatus.OK).body(storeResultList);
-
-    }
 
     @GetMapping("/stores/region-summary")
     @PreAuthorize("hasRole('SUPER_ADMIN')")

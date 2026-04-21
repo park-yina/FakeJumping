@@ -1,6 +1,7 @@
 import {renderHome} from "../uis/common-uis.js";
 import {renderTemp, renderTempList, renderTest} from "../uis/temp-uis.js";
-import {renderCreateStore} from "../uis/store-uis.js";
+import {renderCreateStore, renderStoreListPage} from "../uis/store-uis.js";
+import {createStoreApi, fetchRegions} from "../apis/store-api.js";
 export function sortByDateDesc(data) {
     return [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
@@ -217,7 +218,7 @@ export function navigate(page, el) {
 
     if (page === 'home') renderHome();
     if (page === 'create-store') renderCreateStore();
-    if (page === 'store-list') renderTest('스토어 목록 기능 준비중');
+    if (page === 'store-list') renderStoreListPage();
     if (page === 'temp') renderTemp();
 }
 export function setActive(el) {
@@ -225,4 +226,14 @@ export function setActive(el) {
         .forEach(e => e.classList.remove('active'));
 
     el.classList.add('active');
+}
+async function renderRegions() {
+    const el = document.getElementById("regionFilter");
+
+    const regions = await fetchRegions();
+
+    el.innerHTML = `
+        <option value="">전체 지역</option>
+        ${regions.map(r => `<option value="${r}">${r}</option>`).join("")}
+    `;
 }
