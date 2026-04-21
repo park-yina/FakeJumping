@@ -106,6 +106,9 @@ export async function renderStoreListPage() {
                                 <i class="fa-solid fa-location-dot"></i>
                                 ${s.region} ${s.city} ${s.district}
                             </div>
+                            <div class="store-sub">
+        ${s.address}
+    </div>
                         </div>
                     </div>
                     <div class="store-item-right">

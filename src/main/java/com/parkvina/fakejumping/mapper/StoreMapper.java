@@ -118,5 +118,9 @@ WHERE is_active = 1
             @Param("id") Long id,
             @Param("openAt") LocalDateTime openAt
     );
+    void updateClosedAt(
+            @Param("id") Long id,
+            @Param("openAt") LocalDateTime openAt
+    );
     MyStoreSummary findMyStoreSummary(@Param("storeId") Long storeId);
 }

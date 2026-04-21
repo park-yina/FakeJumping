@@ -2,9 +2,7 @@ package com.parkvina.fakejumping.service;
 
 import com.parkvina.fakejumping.controller.CustomException;
 import com.parkvina.fakejumping.dto.*;
-import com.parkvina.fakejumping.dto.store.PendingStoreInfo;
-import com.parkvina.fakejumping.dto.store.PendingStoreSummary;
-import com.parkvina.fakejumping.dto.store.StoreResult;
+import com.parkvina.fakejumping.dto.store.*;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.enums.AdminRole;
@@ -19,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,8 +32,7 @@ public class StoreService {
     private final PasswordEncoder passwordEncoder;
     private final DiscordService discordService;
     private final AuthService authService;
-
-    private StoreStatus resolveStatus(Store store) {
+    public StoreStatus resolveStatus(Store store) {
         LocalDateTime now = LocalDateTime.now();
 
         // 폐점
@@ -86,7 +84,59 @@ public class StoreService {
         return storeName + "_" + UUID.randomUUID().toString().substring(0, 4);
 
     }
+    public UpdateOpenDateResponse updateStoreOpenDate(
+            Long storeId,
+            LocalDateTime openAt,
+            boolean force
+    ) {
 
+        Store store = storeMapper.findById(storeId);
+        if (store == null) {
+            throw new CustomException("매장을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+        }
+
+        if (openAt == null) {
+            throw new CustomException(
+                    "OPEN_DATE_REQUIRED",
+                    "오픈일은 필수입니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate openDate = openAt.toLocalDate();
+
+        // 🔥 과거 날짜 제한 (force 허용)
+        if (openDate.isBefore(today) && !force) {
+            throw new CustomException(
+                    "OPEN_DATE_PAST",
+                    "과거 날짜 변경은 제한됩니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        StoreStatus status = resolveStatus(store);
+
+        if (!force && status == StoreStatus.OPERATING && openDate.isAfter(today)) {
+            throw new CustomException(
+                    "OPERATING_TO_FUTURE",
+                    "운영 중 매장의 오픈일을 미래로 변경할 수 없습니다.",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        // 🔹 DB 업데이트
+        storeMapper.updateOpenAt(storeId, openAt);
+
+        // 🔹 메모리 상태 반영 (DB 재조회 제거)
+        store.setOpenAt(openAt);
+
+        return new UpdateOpenDateResponse(
+                storeId,
+                openAt,
+                resolveStatus(store)
+        );
+    }
     @Transactional
     public ResetPasswordResult resetPassword(ResetPasswordRequest request) {
         Admin admin = adminMapper.findByUsername(request.getUsername());
