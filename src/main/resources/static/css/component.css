@@ -110,8 +110,9 @@
 .status-item {
     display: inline-flex;
     align-items: center;
-    gap: 6px; /* 🔥 핵심 */
+    gap: 6px;
 }
+
 /* ── Dot indicators ─────────────────────────────── */
 .dot {
     width: 6px;
@@ -156,6 +157,7 @@
     padding: 6px 10px;
     font-size: 12px;
 }
+
 /* ── Refresh button ─────────────────────────────── */
 .refresh-btn {
     display: flex;
@@ -177,7 +179,7 @@
     transform: rotate(90deg);
 }
 
-/* ── Store card ─────────────────────────────────── */
+/* ── Store card (dashboard) ─────────────────────── */
 .store-card { cursor: pointer; }
 .store-card canvas { max-height: 200px; margin: 12px 0; }
 
@@ -261,6 +263,7 @@
 
 /* ── Misc ───────────────────────────────────────── */
 [data-clickable] { cursor: pointer; }
+
 .monthly-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -269,14 +272,14 @@
 }
 
 .monthly-box {
-    background: var(--surface2);
+    background: var(--surface-2);
     padding: 14px;
     border-radius: 10px;
 }
 
 .label {
     font-size: 12px;
-    color: var(--text-dim);
+    color: var(--txt-2);
     margin-bottom: 4px;
 }
 
@@ -288,17 +291,240 @@
 .tags {
     font-size: 12px;
     margin-top: 6px;
-    color: var(--text-dim);
+    color: var(--txt-3);
 }
 
 .more {
     margin-left: 6px;
-    color: var(--primary);
-}
-.text-teal {
-    color: var(--teal);
+    color: var(--violet);
 }
 
-.text-violet {
+.text-teal   { color: var(--teal); }
+.text-violet { color: var(--violet); }
+
+/* ════════════════════════════════════════════════
+   ── Store List Page ──────────────────────────────
+   ════════════════════════════════════════════════ */
+
+.store-list-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* ── Custom Select (Bootstrap 대체) ─────────────── */
+.store-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.custom-select-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 140px;
+}
+
+.custom-select {
+    width: 100%;
+    padding: 9px 34px 9px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    color: var(--txt-1);
+    font-family: var(--font);
+    font-size: 13px;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    outline: none;
+}
+
+.custom-select:focus {
+    border-color: var(--violet);
+    box-shadow: 0 0 0 2px var(--violet-dim);
+}
+
+.custom-select:hover {
+    border-color: var(--border-2);
+    background: var(--surface-3);
+}
+
+/* option 배경 (브라우저 네이티브 제한 있음) */
+.custom-select option {
+    background: var(--surface-2);
+    color: var(--txt-1);
+}
+
+.custom-select-arrow {
+    position: absolute;
+    right: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: var(--txt-3);
+    pointer-events: none;
+    transition: color 0.15s;
+}
+
+.custom-select-wrap:focus-within .custom-select-arrow {
     color: var(--violet);
+}
+
+/* ── Store list items ───────────────────────────── */
+#store-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.store-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+    border: 1px solid var(--border-1);
+    border-left: 2px solid transparent;
+    transition: border-color 0.15s, background 0.15s, border-left-color 0.15s;
+    animation: slideIn 0.22s ease both;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.store-item:hover {
+    background: var(--surface-3);
+    border-color: var(--border-2);
+    border-left-color: var(--violet);
+}
+
+.store-item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.store-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    border: 1px solid var(--border-1);
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--txt-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: var(--mono);
+}
+
+.store-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--txt-1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.store-location {
+    font-size: 11.5px;
+    color: var(--txt-3);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.store-location i {
+    font-size: 10px;
+    color: var(--txt-3);
+}
+
+.store-item-right {
+    flex-shrink: 0;
+    margin-left: 12px;
+}
+
+/* ── Empty state ────────────────────────────────── */
+.store-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 48px 0;
+    color: var(--txt-3);
+    font-size: 13px;
+}
+
+.store-empty i {
+    font-size: 28px;
+    color: var(--border-2);
+}
+
+/* ── Pagination ─────────────────────────────────── */
+.pagination-wrap {
+    margin-top: 18px;
+    display: flex;
+    justify-content: center;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.page-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-1);
+    background: var(--surface-2);
+    color: var(--txt-2);
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-btn:hover:not(:disabled):not(.active) {
+    background: var(--surface-3);
+    border-color: var(--border-2);
+    color: var(--txt-1);
+}
+
+.page-btn.active {
+    background: var(--violet);
+    border-color: var(--violet);
+    color: #fff;
+    box-shadow: 0 0 0 2px var(--violet-dim);
+}
+
+.page-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.page-nav {
+    color: var(--txt-3);
+    font-size: 11px;
 }

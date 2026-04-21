@@ -2,10 +2,218 @@ import {
     fetchStoreSummary,
     fetchRegionSummary,
     fetchPendingStoreSummary,
-    fetchMonthlySummary
+    fetchMonthlySummary, fetchStores, fetchRegions, fetchSubRegions
 } from "../apis/store-api.js";
 import {searchAddress, navigate, createStoreHandler} from "../utils/utils.js";
 
+export async function renderStoreListPage() {
+    try {
+        const el = document.getElementById("main-content");
+
+        el.innerHTML = `
+            <div class="card store-list-card">
+
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="dot dot-violet"></span>
+                        매장 목록
+                    </div>
+                </div>
+
+                <div class="store-filters">
+                    <div class="custom-select-wrap">
+                        <select id="regionFilter" class="custom-select"></select>
+                        <i class="fa-solid fa-chevron-down custom-select-arrow"></i>
+                    </div>
+
+                    <div class="custom-select-wrap">
+                        <select id="subRegionFilter" class="custom-select">
+                            <option value="">세부 지역</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down custom-select-arrow"></i>
+                    </div>
+
+                    <div class="custom-select-wrap">
+                        <select id="statusFilter" class="custom-select">
+                            <option value="">전체 상태</option>
+                            <option value="OPERATING">운영중</option>
+                            <option value="SCHEDULED">오픈 예정</option>
+                            <option value="CLOSED">폐점</option>
+                            <option value="NOT_OPENED">오픈 미정</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                </div>
+
+                <div id="store-list"></div>
+
+                <div class="pagination-wrap">
+                    <div id="pagination" class="pagination"></div>
+                </div>
+            </div>
+        `;
+
+        let currentPage = 0;
+        const size = 10;
+
+        async function load() {
+            const region = document.getElementById("regionFilter").value;
+            const subRegion = document.getElementById("subRegionFilter").value;
+            const status = document.getElementById("statusFilter").value;
+            console.log("🔥 요청값", { region, subRegion, status });
+
+            const data = await fetchStores({
+                region,
+                subRegion,   // 🔥 변경
+                status,
+                page: currentPage,
+                size
+            });
+            console.log(data);
+            console.log("region:", region);
+            console.log("subRegion:", subRegion);
+
+            renderList(data.content);
+            renderPagination(data.total);
+        }
+
+        function getStatusBadgeClass(status) {
+            switch (status) {
+                case "OPERATING": return "badge-teal";
+                case "SCHEDULED": return "badge-violet";
+                case "CLOSED": return "badge-rose";
+                case "NOT_OPENED": return "badge-amber";
+                default: return "badge-amber";
+            }
+        }
+
+        function renderList(stores) {
+            const listEl = document.getElementById("store-list");
+
+            if (!stores.length) {
+                listEl.innerHTML = `
+                    <div class="store-empty">
+                        <i class="fa-solid fa-store-slash"></i>
+                        <span>해당 조건의 매장이 없습니다</span>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = stores.map((s, i) => `
+                <div class="store-item">
+                    <div class="store-item-left">
+                        <div class="store-num">${(currentPage * size) + i + 1}</div>
+                        <div>
+                            <div class="store-name">${s.name}</div>
+                            <div class="store-location">
+                                <i class="fa-solid fa-location-dot"></i>
+                                ${s.region} ${s.city} ${s.district}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="store-item-right">
+                        <span class="badge ${getStatusBadgeClass(s.status)}">${s.statusLabel}</span>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        function renderPagination(total) {
+            const totalPages = Math.ceil(total / size);
+            const el = document.getElementById("pagination");
+
+            if (totalPages <= 1) {
+                el.innerHTML = "";
+                return;
+            }
+
+            let html = `
+                <button class="page-btn" data-page="${currentPage - 1}" ${currentPage === 0 ? "disabled" : ""}>
+                    ◀
+                </button>
+            `;
+
+            for (let i = 0; i < totalPages; i++) {
+                html += `
+                    <button class="page-btn ${i === currentPage ? "active" : ""}" data-page="${i}">
+                        ${i + 1}
+                    </button>
+                `;
+            }
+
+            html += `
+                <button class="page-btn" data-page="${currentPage + 1}" ${currentPage === totalPages - 1 ? "disabled" : ""}>
+                    ▶
+                </button>
+            `;
+
+            el.innerHTML = html;
+        }
+
+        // 페이지 이동
+        el.addEventListener("click", async (e) => {
+            const btn = e.target.closest(".page-btn");
+            if (btn && !btn.disabled) {
+                currentPage = Number(btn.dataset.page);
+                await load();
+            }
+        });
+
+        // 🔥 region 변경 → subRegion 갱신
+        document.getElementById("regionFilter").addEventListener("change", async () => {
+            currentPage = 0;
+            const region = document.getElementById("regionFilter").value;
+
+            await renderSubRegions(region); // 🔥 핵심
+            await load();
+        });
+
+        document.getElementById("subRegionFilter").addEventListener("change", async () => {
+            currentPage = 0;
+            await load();
+        });
+
+        document.getElementById("statusFilter").addEventListener("change", async () => {
+            currentPage = 0;
+            await load();
+        });
+
+        await renderRegions();
+        await renderSubRegions(""); // 초기화
+        await load();
+
+    } catch (e) {
+        console.error(e);
+    }
+}
+async function renderRegions() {
+    const el = document.getElementById("regionFilter");
+
+    const list = await fetchRegions();
+
+    el.innerHTML = `
+        <option value="">전체 지역</option>
+        ${list.map(r => `<option value="${r}">${r}</option>`).join("")}
+    `;
+}
+async function renderSubRegions(region) {
+    const el = document.getElementById("subRegionFilter");
+
+    if (!region) {
+        el.innerHTML = `<option value="">세부 지역</option>`;
+        return;
+    }
+
+    const list = await fetchSubRegions(region);
+
+    const cleanList = list.filter(v => v && v.trim() !== "");
+
+    el.innerHTML = `
+        <option value="">세부 지역</option>
+        ${cleanList.map(r => `<option value="${r}">${r}</option>`).join("")}
+    `;
+}
 export function renderCreateStore() {
     document.getElementById("page-title").textContent = "스토어 생성";
 

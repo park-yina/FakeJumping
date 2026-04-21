@@ -13,7 +13,7 @@
         VALUES (#{name}, #{region}, #{city},#{district},#{address},#{isActive})
 
     </insert>
-    <select id="findStores" resultType="com.parkvina.fakejumping.entity.Store">
+    <select id="findStoresPaged" resultType="com.parkvina.fakejumping.entity.Store">
         SELECT *
         FROM store
         WHERE 1=1
@@ -22,15 +22,31 @@
             AND region = #{region}
         </if>
 
-        <if test="city != null and city != ''">
-            AND city = #{city}
-        </if>
-
-        <if test="district != null and district != ''">
-            AND district = #{district}
+        <if test="subRegion != null and subRegion != ''">
+            AND (
+            city = #{subRegion}
+            OR (city IS NULL AND district = #{subRegion})
+            )
         </if>
 
         ORDER BY id DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countStores" resultType="int">
+        SELECT COUNT(*)
+        FROM store
+        WHERE 1=1
+
+        <if test="region != null and region != ''">
+            AND region = #{region}
+        </if>
+
+        <if test="subRegion != null and subRegion != ''">
+            AND (
+            city = #{subRegion}
+            OR (city IS NULL AND district = #{subRegion})
+            )
+        </if>
     </select>
     <select id="selectActiveStore"
             resultType="com.parkvina.fakejumping.entity.Store"

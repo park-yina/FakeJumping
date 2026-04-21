@@ -20,10 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -192,13 +189,30 @@ public class StoreService {
     private String normalize(String value) {
         return (value == null || value.trim().isEmpty()) ? null : value;
     }
-    public List<StoreResult> getAllStoreList(String region, String city, String district){
-
+    public Map<String, Object> getStoresWithPaging(
+            String region,
+            String subRegion,
+            int page,
+            int size
+    ) {
         region = normalize(region);
-        city = normalize(city);
-        district = normalize(district);
-        return storeMapper.findStores(region, city, district)
-                .stream()
+        subRegion = normalize(subRegion);
+
+        int offset = page * size;
+
+        List<Store> stores = storeMapper.findStoresPaged(
+                region,
+                subRegion,
+                offset,
+                size
+        );
+
+        int total = storeMapper.countStores(
+                region,
+                subRegion
+        );
+
+        List<StoreResult> content = stores.stream()
                 .map(store -> {
                     StoreStatus status = resolveStatus(store);
 
@@ -213,9 +227,17 @@ public class StoreService {
                     );
                 })
                 .toList();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", content);
+        result.put("total", total);
+        result.put("page", page);
+        result.put("size", size);
+
+        return result;
     }
-    public List<String>getCityList(String region){
-        return storeMapper.findCitiesByRegion(region);
+    public List<String> getSubRegionList(String region) {
+        return storeMapper.findSubRegions(region);
     }
     public List<String>getRegionList(){
         return storeMapper.findRegions();

@@ -48,13 +48,16 @@ public interface StoreMapper {
     List<String> findRegions();
 
     @Select("""
-            SELECT DISTINCT city
-            FROM store
-            WHERE region = #{region}
-            AND city IS NOT NULL
-            ORDER BY city
-            """)
-    List<String> findCitiesByRegion(String region);
+    SELECT DISTINCT
+        CASE
+            WHEN city IS NULL OR city = '' THEN district
+            ELSE city
+        END
+    FROM store
+    WHERE region = #{region}
+    ORDER BY 1
+""")
+    List<String> findSubRegions(String region);
 
     @Select("""
             
@@ -72,11 +75,17 @@ public interface StoreMapper {
     List<Store> selectActiveStore();
 
     Map<String, Object> countStoreSummary();
-
-    List<Store> findStores(
+    String findSubRegions();
+    List<Store> findStoresPaged(
             @Param("region") String region,
-            @Param("city") String city,
-            @Param("district") String district
+            @Param("subRegion") String subRegion,
+            @Param("offset") int offset,
+            @Param("size") int size
+    );
+
+    int countStores(
+            @Param("region") String region,
+            @Param("subRegion") String subRegion
     );
     @Select("""
 SELECT *

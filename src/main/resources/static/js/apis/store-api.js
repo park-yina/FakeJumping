@@ -60,3 +60,53 @@ export async function fetchPendingStoreSummary() {
     if (!res.ok) throw res;
     return res.json();
 }
+export async function fetchRegions() {
+    const res = await fetch("/api/stores/regions", {
+        headers: {
+            Authorization: "Bearer " + localStorage.getItem("accessToken")
+        }
+    });
+
+    if (!res.ok) throw new Error("지역 조회 실패");
+
+    return res.json();
+}
+export async function fetchSubRegions(region) {
+    const res = await fetch(`/api/stores/sub-regions?region=${region}`, {
+        headers: {
+            Authorization: "Bearer " + localStorage.getItem("accessToken")
+        }
+    });
+
+    return res.json();
+}
+export async function fetchStores({
+                                      region = "",
+                                      city = "",
+                                      district = "",
+                                      status = "",
+                                      page = 0,
+                                      size = 10
+                                  }) {
+    const params = new URLSearchParams();
+
+    if (region) params.append("region", region);
+    if (city) params.append("city", city);
+    if (district) params.append("district", district);
+    if (status) params.append("status", status);
+
+    params.append("page", page);
+    params.append("size", size);
+
+    const res = await fetch(`/api/stores?${params.toString()}`, {
+        headers: {
+            Authorization: "Bearer " + localStorage.getItem("accessToken")
+        }
+    });
+
+    if (!res.ok) {
+        throw new Error("스토어 조회 실패");
+    }
+
+    return res.json();
+}
