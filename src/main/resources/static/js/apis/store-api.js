@@ -82,8 +82,7 @@ export async function fetchSubRegions(region) {
 }
 export async function fetchStores({
                                       region = "",
-                                      city = "",
-                                      district = "",
+                                      subRegion = "",
                                       status = "",
                                       page = 0,
                                       size = 10
@@ -91,8 +90,7 @@ export async function fetchStores({
     const params = new URLSearchParams();
 
     if (region) params.append("region", region);
-    if (city) params.append("city", city);
-    if (district) params.append("district", district);
+    if (subRegion) params.append("subRegion", subRegion);
     if (status) params.append("status", status);
 
     params.append("page", page);

@@ -197,7 +197,6 @@ public class StoreService {
     ) {
         region = normalize(region);
         subRegion = normalize(subRegion);
-
         int offset = page * size;
 
         List<Store> stores = storeMapper.findStoresPaged(
