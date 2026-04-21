@@ -33,6 +33,7 @@ public class StoreService {
     private final PasswordEncoder passwordEncoder;
     private final DiscordService discordService;
     private final AuthService authService;
+
     private StoreStatus resolveStatus(Store store) {
         LocalDateTime now = LocalDateTime.now();
 
@@ -63,6 +64,7 @@ public class StoreService {
 
         return StoreStatus.NOT_OPENED;
     }
+
     public String generateTempPassword(int len) {
         SecureRandom secureRandom = new SecureRandom();
         String tempPasswordStr = IntStream.concat(
@@ -182,38 +184,45 @@ public class StoreService {
                 createRequest.getAddress()
         );
     }
-    public List<RegionSummary>getAllRegionSummary(){
+
+    public List<RegionSummary> getAllRegionSummary() {
         return storeMapper.regionSummary();
     }
 
     private String normalize(String value) {
         return (value == null || value.trim().isEmpty()) ? null : value;
     }
+
     public Map<String, Object> getStoresWithPaging(
             String region,
             String subRegion,
+            String status,
             int page,
             int size
     ) {
         region = normalize(region);
         subRegion = normalize(subRegion);
+        status = normalize(status);
+
         int offset = page * size;
 
         List<Store> stores = storeMapper.findStoresPaged(
                 region,
                 subRegion,
-                offset,
-                size
+                status,
+                size,
+                offset
         );
 
         int total = storeMapper.countStores(
                 region,
-                subRegion
+                subRegion,
+                status
         );
 
         List<StoreResult> content = stores.stream()
                 .map(store -> {
-                    StoreStatus status = resolveStatus(store);
+                    StoreStatus resolvedStatus = resolveStatus(store); // 🔥 변수명 변경
 
                     return new StoreResult(
                             store.getId(),
@@ -222,7 +231,7 @@ public class StoreService {
                             Optional.ofNullable(store.getCity()).orElse(""),
                             Optional.ofNullable(store.getDistrict()).orElse(""),
                             store.getAddress(),
-                            status
+                            resolvedStatus
                     );
                 })
                 .toList();
@@ -235,24 +244,31 @@ public class StoreService {
 
         return result;
     }
+
     public List<String> getSubRegionList(String region) {
         return storeMapper.findSubRegions(region);
     }
-    public List<String>getRegionList(){
+
+    public List<String> getRegionList() {
         return storeMapper.findRegions();
     }
-    public List<String>getDistrictList(String region,String city){
-        return storeMapper.findDistricts(region,city);
+
+    public List<String> getDistrictList(String region, String city) {
+        return storeMapper.findDistricts(region, city);
     }
+
     public List<TempResponse> tempAdminList() {
         return adminMapper.selectTempAdminList();
     }
-    public int countPendingStores(){
+
+    public int countPendingStores() {
         return storeMapper.countFutureOpenStores();
     }
+
     public Map<String, Object> getAdminSummary() {
         return adminMapper.countAdminSummary();
     }
+
     public PendingStoreSummary getPendingStoreSummary(Integer limit) {
 
         int finalLimit = (limit == null || limit <= 0) ? 5 : limit;
@@ -262,6 +278,7 @@ public class StoreService {
 
         return new PendingStoreSummary(count, stores);
     }
+
     public Map<String, Object> getMonthlyOpenSummary() {
 
         List<Store> opened = storeMapper.findThisMonthOpen();

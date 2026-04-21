@@ -1,9 +1,7 @@
+import {fetchWithAuth} from "../utils/utils.js";
+
 export async function fetchTempSummary() {
-    const res = await fetch("/api/admin/temp/count", {
-        headers: {
-            Authorization: "Bearer " + localStorage.getItem("accessToken")
-        }
-    });
+    const res = await fetchWithAuth("/api/admin/temp/count");
 
     if (!res.ok) throw res;
 

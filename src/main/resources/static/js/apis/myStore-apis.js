@@ -1,30 +1,34 @@
+import {fetchWithAuth} from "../utils/utils.js";
+
 export async function fetchMyStoreMe() {
-    const res = await fetch("/api/store/me", {
-        headers: {
-            Authorization: "Bearer " + localStorage.getItem("accessToken")
-        }
-    });
+    const res = await fetchWithAuth("/api/store/me");
+
     if (!res.ok) throw res;
+
     return res.json();
 }
 
 export async function updateOpenDate(openAt, force = false) {
     try {
-        const res = await fetch("/api/store/me/open-date", {
+        const res = await fetchWithAuth("/api/store/me/open-date", {
             method: "PUT",
             headers: {
-                "Content-Type": "application/json",
-                Authorization: "Bearer " + localStorage.getItem("accessToken")
+                "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                openAt: openAt,
-                force: force
+                openAt,
+                force
             })
         });
 
+        // 🔥 에러 처리
         if (!res.ok) {
-            const err = await res.json();
-
+            let err;
+            try {
+                err = await res.json();
+            } catch {
+                err = { message: "서버 오류" };
+            }
             throw err;
         }
 
@@ -42,6 +46,7 @@ export async function updateOpenDate(openAt, force = false) {
     } catch (e) {
         console.error(e);
 
+        // 🔥 특정 에러는 상위에서 처리
         if (e.code === "OPERATING_TO_FUTURE") {
             return Promise.reject(e);
         }

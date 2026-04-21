@@ -79,13 +79,16 @@ public interface StoreMapper {
     List<Store> findStoresPaged(
             @Param("region") String region,
             @Param("subRegion") String subRegion,
-            @Param("offset") int offset,
-            @Param("size") int size
+            @Param("status") String status,
+            @Param("size") int size,
+            @Param("offset") int offset
     );
+
 
     int countStores(
             @Param("region") String region,
-            @Param("subRegion") String subRegion
+            @Param("subRegion") String subRegion,
+            @Param("status") String status
     );
     @Select("""
 SELECT *
