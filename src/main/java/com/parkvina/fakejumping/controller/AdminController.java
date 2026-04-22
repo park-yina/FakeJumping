@@ -1,10 +1,13 @@
 package com.parkvina.fakejumping.controller;
 
 import com.parkvina.fakejumping.dto.*;
+import com.parkvina.fakejumping.dto.store.OpenDateRequest;
 import com.parkvina.fakejumping.dto.store.PendingStoreSummary;
 import com.parkvina.fakejumping.dto.store.StoreResult;
+import com.parkvina.fakejumping.dto.store.UpdateOpenDateResponse;
 import com.parkvina.fakejumping.service.StoreService;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -90,7 +93,16 @@ public class AdminController {
 
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PutMapping("/stores/{storeId}/open-date")
+    public ResponseEntity<UpdateOpenDateResponse>updateStoreOpenDate(
+            @RequestBody OpenDateRequest req,
+            @PathVariable Long storeId
+            ){
+        UpdateOpenDateResponse updateOpenDateResponse=storeService.updateStoreOpenDate(storeId,req.getOpenAt(),req.getForce());
+        return ResponseEntity.status(HttpStatus.OK).body(updateOpenDateResponse);
 
+    }
     @GetMapping("/admin/temp")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<TempResponse>> tempAdminList() {

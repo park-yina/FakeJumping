@@ -125,10 +125,8 @@ public class StoreService {
             );
         }
 
-        // 🔹 DB 업데이트
         storeMapper.updateOpenAt(storeId, openAt);
 
-        // 🔹 메모리 상태 반영 (DB 재조회 제거)
         store.setOpenAt(openAt);
 
         return new UpdateOpenDateResponse(
