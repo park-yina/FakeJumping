@@ -11,7 +11,6 @@ let fp;
 async function openStoreModal(store) {
     let selectedDate = store.openAt ? store.openAt.split("T")[0] : null;
 
-    // ── STEP 1: 날짜 선택 ──────────────────────
     const step1 = await Swal.fire({
         width: 470,
         showCancelButton: true,
@@ -50,8 +49,7 @@ async function openStoreModal(store) {
                 dateFormat: "Y-m-d",
                 allowInput: true,
                 clickOpens: false,
-                minDate: null, // 🔥 관리자니까 과거 허용
-
+                minDate: null,
                 onChange(selectedDates, dateStr, instance) {
                     if (!selectedDates.length) return;
                     selectedDate = dateStr;
@@ -81,7 +79,6 @@ async function openStoreModal(store) {
 
     const date = step1.value;
 
-    // ── STEP 2: 확인 ──────────────────────────
     const step2 = await Swal.fire({
         width: 420,
         showCancelButton: true,
@@ -120,21 +117,48 @@ async function openStoreModal(store) {
     }
     if (!step2.isConfirmed) return;
 
-    // ── STEP 3: 저장 ──────────────────────────
+    let force = false;
+
+    const today = new Date();
+    const selected = new Date(date);
+
+    // 🔥 과거 날짜 → 요청 전에 처리
+    if (selected < today) {
+        const confirm = await Swal.fire({
+            icon: "warning",
+            title: "과거 날짜 선택",
+            text: "과거 날짜로 변경하시겠습니까?",
+            showCancelButton: true,
+            confirmButtonText: "강제 변경",
+            cancelButtonText: "취소",
+            buttonsStyling: false,
+            customClass: {
+                popup: "swal-custom",
+                confirmButton: "btn btn-danger",
+                cancelButton: "btn btn-ghost"
+            }
+        });
+
+        if (!confirm.isConfirmed) return;
+        force = true;
+    }
+
     try {
-        await updateStoreOpenDate(store.id, date + "T00:00:00", false);
+        await updateStoreOpenDate(store.id, date + "T00:00:00", force);
 
     } catch (e) {
+        console.error(e);
 
-        if (e.code === "OPERATING_TO_FUTURE" || e.code === "OPEN_DATE_PAST") {
-
+        // 🔥 운영중 → 미래 변경 (서버에서만 판단)
+        if (e.code === "OPERATING_TO_FUTURE") {
             const confirm = await Swal.fire({
                 icon: "warning",
                 title: "강제 변경",
                 html: `
-                    정책에 따라 제한된 변경입니다.<br><br>
-                    계속 진행하시겠습니까?
-                `,
+                운영 중 매장의 오픈일을 변경하면<br>
+                데이터에 영향을 줄 수 있습니다.<br><br>
+                계속 진행하시겠습니까?
+            `,
                 showCancelButton: true,
                 confirmButtonText: "강제 변경",
                 cancelButtonText: "취소",
@@ -149,18 +173,16 @@ async function openStoreModal(store) {
             if (!confirm.isConfirmed) return;
 
             await updateStoreOpenDate(store.id, date + "T00:00:00", true);
-
         } else {
             await Swal.fire({
                 icon: "error",
-                title: "실패",
-                text: e.message || "오픈 날짜 설정 실패"
+                title: "오픈 날짜 설정 실패",
+                text: e.message || "다시 시도해주세요."
             });
             return;
         }
     }
 
-    // ── 성공 ──────────────────────────
     await renderStoreListPage();
 
     await Swal.fire({

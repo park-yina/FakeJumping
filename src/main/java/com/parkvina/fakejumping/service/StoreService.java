@@ -106,7 +106,6 @@ public class StoreService {
         LocalDate today = LocalDate.now();
         LocalDate openDate = openAt.toLocalDate();
 
-        // 🔥 과거 날짜 제한 (force 허용)
         if (openDate.isBefore(today) && !force) {
             throw new CustomException(
                     "OPEN_DATE_PAST",
