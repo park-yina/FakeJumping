@@ -2,10 +2,197 @@ import {
     fetchStoreSummary,
     fetchRegionSummary,
     fetchPendingStoreSummary,
-    fetchMonthlySummary, fetchStores, fetchRegions, fetchSubRegions
+    fetchMonthlySummary, fetchStores, fetchRegions, fetchSubRegions, updateStoreOpenDate
 } from "../apis/store-api.js";
 import {searchAddress, navigate, createStoreHandler} from "../utils/utils.js";
+import {formatDateKo} from "./myStore-uis.js";
+let fp;
 
+async function openStoreModal(store) {
+    let selectedDate = store.openAt ? store.openAt.split("T")[0] : null;
+
+    const step1 = await Swal.fire({
+        width: 470,
+        showCancelButton: true,
+        confirmButtonText: "다음 →",
+        cancelButtonText: "취소",
+        buttonsStyling: false,
+        customClass: {
+            popup: "swal-custom",
+            confirmButton: "btn btn-primary",
+            cancelButton: "btn btn-ghost"
+        },
+        html: `
+        <div class="swal-modal-header">
+            <h3>${store.name}</h3>
+            <p>오픈일을 변경합니다</p>
+        </div>
+
+        <div class="date-input-wrapper">
+            <input id="flatpickrInput" 
+                   class="custom-date-input"
+                   placeholder="날짜 선택">
+        </div>
+
+        <div class="swal-guide-box">
+            <div class="swal-guide-text">
+                운영 정책에 따라 일부 변경은 제한될 수 있습니다.
+            </div>
+        </div>
+        `,
+        didOpen: () => {
+            const input = document.getElementById("flatpickrInput");
+
+            fp = flatpickr(input, {
+                locale: flatpickr.l10ns.ko,
+                defaultDate: selectedDate,
+                dateFormat: "Y-m-d",
+                allowInput: true,
+                clickOpens: false,
+                minDate: null,
+                onChange(selectedDates, dateStr, instance) {
+                    if (!selectedDates.length) return;
+                    selectedDate = dateStr;
+                    instance.close();
+                }
+            });
+
+            input.onclick = (e) => {
+                e.stopPropagation();
+                fp.isOpen ? fp.close() : fp.open();
+            };
+        },
+        willClose: () => {
+            fp?.destroy();
+            fp = null;
+        },
+        preConfirm() {
+            if (!selectedDate) {
+                Swal.showValidationMessage("날짜를 선택해주세요");
+                return false;
+            }
+            return selectedDate;
+        }
+    });
+
+    if (!step1.isConfirmed) return;
+
+    const date = step1.value;
+
+    const step2 = await Swal.fire({
+        width: 420,
+        showCancelButton: true,
+        confirmButtonText: "저장하기",
+        cancelButtonText: "← 이전",
+        buttonsStyling: false,
+        customClass: {
+            popup: "swal-custom",
+            confirmButton: "btn btn-primary",
+            cancelButton: "btn btn-ghost"
+        },
+        html: `
+        <div class="swal-modal-header">
+            <h3>오픈일 확인</h3>
+            <p>${store.name}</p>
+        </div>
+
+        <div class="swal-confirm-card">
+            <div class="swal-confirm-icon">
+                <i class="fa-regular fa-calendar-check"></i>
+            </div>
+            <div>
+                <div class="swal-confirm-date">
+                    ${formatDateKo(date)}
+                </div>
+                <div class="swal-confirm-meta">
+                    변경 예정
+                </div>
+            </div>
+        </div>
+        `
+    });
+
+    if (step2.dismiss === Swal.DismissReason.cancel) {
+        return openStoreModal(store);
+    }
+    if (!step2.isConfirmed) return;
+
+    let force = false;
+
+    const today = new Date();
+    const selected = new Date(date);
+
+    // 🔥 과거 날짜 → 요청 전에 처리
+    if (selected < today) {
+        const confirm = await Swal.fire({
+            icon: "warning",
+            title: "과거 날짜 선택",
+            text: "과거 날짜로 변경하시겠습니까?",
+            showCancelButton: true,
+            confirmButtonText: "강제 변경",
+            cancelButtonText: "취소",
+            buttonsStyling: false,
+            customClass: {
+                popup: "swal-custom",
+                confirmButton: "btn btn-danger",
+                cancelButton: "btn btn-ghost"
+            }
+        });
+
+        if (!confirm.isConfirmed) return;
+        force = true;
+    }
+
+    try {
+        await updateStoreOpenDate(store.id, date + "T00:00:00", force);
+
+    } catch (e) {
+        console.error(e);
+
+        // 🔥 운영중 → 미래 변경 (서버에서만 판단)
+        if (e.code === "OPERATING_TO_FUTURE") {
+            const confirm = await Swal.fire({
+                icon: "warning",
+                title: "강제 변경",
+                html: `
+                운영 중 매장의 오픈일을 변경하면<br>
+                데이터에 영향을 줄 수 있습니다.<br><br>
+                계속 진행하시겠습니까?
+            `,
+                showCancelButton: true,
+                confirmButtonText: "강제 변경",
+                cancelButtonText: "취소",
+                buttonsStyling: false,
+                customClass: {
+                    popup: "swal-custom",
+                    confirmButton: "btn btn-danger",
+                    cancelButton: "btn btn-ghost"
+                }
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            await updateStoreOpenDate(store.id, date + "T00:00:00", true);
+        } else {
+            await Swal.fire({
+                icon: "error",
+                title: "오픈 날짜 설정 실패",
+                text: e.message || "다시 시도해주세요."
+            });
+            return;
+        }
+    }
+
+    await renderStoreListPage();
+
+    await Swal.fire({
+        icon: "success",
+        title: "설정 완료",
+        text: `${store.name} 오픈일이 변경되었습니다`,
+        timer: 1200,
+        showConfirmButton: false
+    });
+}
 export async function renderStoreListPage() {
     try {
         const el = document.getElementById("main-content");
@@ -55,7 +242,7 @@ export async function renderStoreListPage() {
 
         let currentPage = 0;
         const size = 10;
-
+        let currentStores = [];
         async function load() {
             const region = document.getElementById("regionFilter").value;
             const subRegion = document.getElementById("subRegionFilter").value;
@@ -69,10 +256,22 @@ export async function renderStoreListPage() {
                 page: currentPage,
                 size
             });
+            currentStores = data.content; // 🔥 이거 필수
+
             renderList(data.content);
             renderPagination(data.total);
         }
+        const listEl = document.getElementById("store-list");
 
+        listEl.addEventListener("click", (e) => {
+            const item = e.target.closest(".store-item");
+            if (!item) return;
+
+            const storeId = item.dataset.id;
+            const store = currentStores.find(s => s.id == storeId);
+
+            openStoreModal(store);
+        });
         function getStatusBadgeClass(status) {
             switch (status) {
                 case "OPERATING": return "badge-teal";
@@ -97,7 +296,7 @@ export async function renderStoreListPage() {
             }
 
             listEl.innerHTML = stores.map((s, i) => `
-                <div class="store-item">
+                <div class="store-item" data-id="${s.id}">
                     <div class="store-item-left">
                         <div class="store-num">${(currentPage * size) + i + 1}</div>
                         <div>
@@ -106,6 +305,9 @@ export async function renderStoreListPage() {
                                 <i class="fa-solid fa-location-dot"></i>
                                 ${s.region} ${s.city} ${s.district}
                             </div>
+                            <div class="store-sub">
+        ${s.address}
+    </div>
                         </div>
                     </div>
                     <div class="store-item-right">

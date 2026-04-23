@@ -4,6 +4,7 @@ import com.parkvina.fakejumping.controller.CustomException;
 import com.parkvina.fakejumping.dto.store.MyStoreSummary;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
+import com.parkvina.fakejumping.enums.StoreStatus;
 import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.StoreMapper;
 import com.parkvina.fakejumping.security.AuthService;
@@ -23,6 +24,7 @@ public class MyStoreService {
     private final PasswordEncoder passwordEncoder;
     private final DiscordService discordService;
     private final AuthService authService;
+    private final StoreService storeService;
     public void sendContact(Long adminId, String content) {
 
         Admin admin = adminMapper.findById(adminId);
@@ -65,10 +67,12 @@ public class MyStoreService {
             );
         }
 
-        if (isOperating(store) && openDate.isAfter(today) && !force) {
+        StoreStatus status = storeService.resolveStatus(store);
+
+        if (status == StoreStatus.OPERATING && openDate.isAfter(today) && !force) {
             throw new CustomException(
                     "OPERATING_TO_FUTURE",
-                    "운영 중 매장의 오픈일을 미래로 변경하면 데이터에 영향을 줄 수 있습니다.",
+                    "운영 중 매장의 오픈일을 미래로 변경할 수 없습니다.",
                     HttpStatus.CONFLICT
             );
         }
@@ -76,13 +80,5 @@ public class MyStoreService {
         storeMapper.updateOpenAt(storeId, openAt);
 
         return storeMapper.findMyStoreSummary(storeId);
-    }
-
-    private boolean isOperating(Store store) {
-
-        if (store.getOpenAt() == null) return false;
-        if (store.getClosedAt() != null) return false;
-
-        return store.getOpenAt().isBefore(LocalDateTime.now());
     }
 }

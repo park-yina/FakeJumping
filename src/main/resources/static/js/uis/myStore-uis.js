@@ -135,7 +135,7 @@ function buildStepBar(currentStep) {
 }
 
 // 날짜 → "2025년 4월 15일 화요일" 포맷
-function formatDateKo(dateStr) {
+export function formatDateKo(dateStr) {
     const d = new Date(dateStr);
     const days = ["일", "월", "화", "수", "목", "금", "토"];
     return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
