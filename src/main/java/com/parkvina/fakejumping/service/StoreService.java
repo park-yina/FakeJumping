@@ -6,11 +6,13 @@ import com.parkvina.fakejumping.dto.store.*;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.enums.AdminRole;
+import com.parkvina.fakejumping.enums.AdminStatus;
 import com.parkvina.fakejumping.enums.StoreStatus;
 import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.StoreMapper;
 import com.parkvina.fakejumping.security.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,7 @@ public class StoreService {
     private final PasswordEncoder passwordEncoder;
     private final DiscordService discordService;
     private final AuthService authService;
+
     public StoreStatus resolveStatus(Store store) {
         LocalDateTime now = LocalDateTime.now();
 
@@ -84,6 +87,79 @@ public class StoreService {
         return storeName + "_" + UUID.randomUUID().toString().substring(0, 4);
 
     }
+
+    @Transactional
+    public UpdateCloseDateResponse updateCloseDate(
+            Long storeId,
+            LocalDateTime closedAt
+    ) {
+        Store store = storeMapper.findById(storeId);
+        if (store == null) {
+            throw new CustomException("매장을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+        }
+        if (closedAt == null) {
+            throw new CustomException(
+                    "CLOSED_DATE_REQUIRED",
+                    "폐점일은 필수입니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+        if (store.getOpenAt() != null && closedAt.isBefore(store.getOpenAt())) {
+            throw new CustomException(
+                    "INVALID_CLOSE_DATE",
+                    "폐점일은 오픈일보다 이전일 수 없습니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+        storeMapper.updateClosedAt(storeId, closedAt);
+        store.setClosedAt(closedAt);
+        return new UpdateCloseDateResponse(
+                storeId,
+                closedAt,
+                resolveStatus(store)
+        );
+    }
+
+    @Transactional
+    public UpdateCloseDateResponse closeStore(
+            Long storeId,
+            LocalDateTime closedAt,
+            boolean force
+    ) {
+        Store store = storeMapper.findById(storeId);
+
+        if (store == null) {
+            throw new CustomException("매장을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+        }
+
+        if (closedAt == null) {
+            throw new CustomException("폐점일은 필수입니다.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (!force) {
+            if (store.getClosedAt() != null) {
+                throw new CustomException("이미 폐점된 매장입니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (store.getOpenAt() == null) {
+                throw new CustomException("오픈되지 않은 매장은 폐점할 수 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+            if (closedAt.isBefore(store.getOpenAt())) {
+                throw new CustomException("폐점일은 오픈일보다 이전일 수 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        storeMapper.updateClosedAt(storeId, closedAt);
+        adminMapper.deactivateStoreAdmins(storeId);
+
+        store.setClosedAt(closedAt);
+
+        return new UpdateCloseDateResponse(
+                storeId,
+                closedAt,
+                resolveStatus(store)
+        );
+    }
+
     public UpdateOpenDateResponse updateStoreOpenDate(
             Long storeId,
             LocalDateTime openAt,
@@ -134,6 +210,7 @@ public class StoreService {
                 resolveStatus(store)
         );
     }
+
     @Transactional
     public ResetPasswordResult resetPassword(ResetPasswordRequest request) {
         Admin admin = adminMapper.findByUsername(request.getUsername());
@@ -217,6 +294,7 @@ public class StoreService {
         admin.setStoreId(storeId);
         admin.setIsActive(true);
         admin.setMustChangePassword(true);
+        admin.setAdminStatus(AdminStatus.ACTIVE);
 
         adminMapper.insertAdmin(admin);
 

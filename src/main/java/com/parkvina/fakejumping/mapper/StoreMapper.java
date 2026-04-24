@@ -120,7 +120,7 @@ WHERE is_active = 1
     );
     void updateClosedAt(
             @Param("id") Long id,
-            @Param("openAt") LocalDateTime openAt
+            @Param("openAt") LocalDateTime closedAt
     );
     MyStoreSummary findMyStoreSummary(@Param("storeId") Long storeId);
 }

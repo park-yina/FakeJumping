@@ -17,7 +17,8 @@
         role,
         store_id,
         is_active,
-        must_change_password
+        must_change_password,
+        status
         )
         VALUES (
         #{username},
@@ -25,7 +26,8 @@
         #{role},
         #{storeId},
         #{isActive},
-        #{mustChangePassword}
+        #{mustChangePassword},
+        #{status}
         )
 
     </insert>

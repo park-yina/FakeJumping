@@ -1,6 +1,7 @@
 package com.parkvina.fakejumping.entity;
 
 import com.parkvina.fakejumping.enums.AdminRole;
+import com.parkvina.fakejumping.enums.AdminStatus;
 import lombok.Data;
 
 @Data
@@ -20,4 +21,5 @@ public class Admin {
 
     private Boolean mustChangePassword;
 
+    private AdminStatus adminStatus;
 }
