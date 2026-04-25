@@ -37,27 +37,25 @@ public class StoreService {
 
     public StoreStatus resolveStatus(Store store) {
         LocalDateTime now = LocalDateTime.now();
-
-        // 폐점
         if (store.getClosedAt() != null) {
-            return StoreStatus.CLOSED;
+            if (!store.getClosedAt().isAfter(now)) {
+                return StoreStatus.CLOSED;
+            }
         }
 
-        // 오픈 예정
         if (store.getIsActive()
                 && store.getOpenAt() != null
                 && store.getOpenAt().isAfter(now)) {
             return StoreStatus.SCHEDULED;
         }
 
-        // 운영중
+        // 운영중 (폐점 예정 포함)
         if (store.getIsActive()
                 && store.getOpenAt() != null
                 && !store.getOpenAt().isAfter(now)) {
             return StoreStatus.OPERATING;
         }
 
-        // 오픈 미정
         if (store.getIsActive()
                 && store.getOpenAt() == null) {
             return StoreStatus.NOT_OPENED;
@@ -65,7 +63,6 @@ public class StoreService {
 
         return StoreStatus.NOT_OPENED;
     }
-
     public String generateTempPassword(int len) {
         SecureRandom secureRandom = new SecureRandom();
         String tempPasswordStr = IntStream.concat(
@@ -101,6 +98,13 @@ public class StoreService {
             throw new CustomException(
                     "CLOSED_DATE_REQUIRED",
                     "폐점일은 필수입니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+        if (store.getClosedAt() == null) {
+            throw new CustomException(
+                    "NOT_CLOSED_STORE",
+                    "폐점된 매장이 아닙니다.",
                     HttpStatus.BAD_REQUEST
             );
         }

@@ -22,7 +22,15 @@ public interface StoreMapper {
                     """
     )
     Store findById(Long id);
-
+    @Select("""
+SELECT DISTINCT s.id
+FROM store s
+JOIN admin a ON a.store_id = s.id
+WHERE s.closed_at <= #{now}
+AND a.status = 'ACTIVE'
+AND a.role = 'STORE_ADMIN'
+""")
+    List<Long> findStoresToDeactivateAdmins(LocalDateTime now);
     @Select("""
             SELECT  *
             FROM store
