@@ -2,15 +2,18 @@ import {
     fetchStoreSummary,
     fetchRegionSummary,
     fetchPendingStoreSummary,
-    fetchMonthlySummary, fetchStores, fetchRegions, fetchSubRegions, updateStoreOpenDate
+    fetchMonthlySummary, fetchStores, fetchRegions, fetchSubRegions, updateStoreOpenDate, closeStore, updateCloseDate
 } from "../apis/store-api.js";
-import {searchAddress, navigate, createStoreHandler} from "../utils/utils.js";
+import {searchAddress, navigate, createStoreHandler, buildStepHeader} from "../utils/utils.js";
 import {formatDateKo} from "./myStore-uis.js";
 let fp;
+async function openUpdateCloseDateModal(store) {
+    let selectedDate = store.closedAt?.split("T")[0] || null;
 
-async function openStoreModal(store) {
-    let selectedDate = store.openAt ? store.openAt.split("T")[0] : null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
+    // 1️⃣ Step1: 날짜 선택
     const step1 = await Swal.fire({
         width: 470,
         showCancelButton: true,
@@ -23,22 +26,369 @@ async function openStoreModal(store) {
             cancelButton: "btn btn-ghost"
         },
         html: `
-        <div class="swal-modal-header">
-            <h3>${store.name}</h3>
-            <p>오픈일을 변경합니다</p>
-        </div>
-
-        <div class="date-input-wrapper">
-            <input id="flatpickrInput" 
-                   class="custom-date-input"
-                   placeholder="날짜 선택">
-        </div>
-
-        <div class="swal-guide-box">
-            <div class="swal-guide-text">
-                운영 정책에 따라 일부 변경은 제한될 수 있습니다.
+            ${buildStepHeader(1, ["날짜 선택", "확인", "위험"])}
+            <div class="swal-modal-header">
+                <h3>${store.name}</h3>
+                <p>폐점일을 수정합니다</p>
             </div>
-        </div>
+            <div class="date-input-wrapper">
+                <input id="closeDateInput"
+                       class="custom-date-input"
+                       placeholder="날짜 선택">
+            </div>
+        `,
+        didOpen: () => {
+            const input = document.getElementById("closeDateInput");
+
+            fp = flatpickr(input, {
+                locale: flatpickr.l10ns.ko,
+                defaultDate: selectedDate,
+                dateFormat: "Y-m-d",
+                onChange(selectedDates, dateStr) {
+                    selectedDate = dateStr;
+                }
+            });
+        },
+        willClose: () => {
+            fp?.destroy();
+            fp = null;
+        },
+        preConfirm: () => {
+            if (!selectedDate) {
+                Swal.showValidationMessage("날짜를 선택해주세요");
+                return false;
+            }
+            return selectedDate;
+        }
+    });
+
+    if (!step1.isConfirmed) return;
+
+    const date = step1.value;
+
+    // 2️⃣ Step2: 확인
+    const step2 = await Swal.fire({
+        width: 420,
+        showCancelButton: true,
+        confirmButtonText: "다음 →",
+        cancelButtonText: "← 이전",
+        buttonsStyling: false,
+        customClass: {
+            popup: "swal-custom",
+            confirmButton: "btn btn-violet",
+            cancelButton: "btn btn-ghost"
+        },
+        html: `
+            ${buildStepHeader(2, ["날짜 선택", "확인", "위험"])}
+            <div class="swal-modal-header">
+                <h3>폐점일 변경 확인</h3>
+                <p>${store.name}</p>
+            </div>
+            <div class="swal-confirm-card">
+                <div class="swal-confirm-icon">
+                    <i class="fa-solid fa-pen"></i>
+                </div>
+                <div>
+                    <div class="swal-confirm-date">
+                        ${formatDateKo(date)}
+                    </div>
+                    <div class="swal-confirm-meta">
+                        변경 예정
+                    </div>
+                </div>
+            </div>
+        `
+    });
+
+    if (step2.dismiss === Swal.DismissReason.cancel) {
+        return openUpdateCloseDateModal(store);
+    }
+    if (!step2.isConfirmed) return;
+
+    // 3️⃣ Step3: 과거 경고
+    const selected = new Date(date);
+    selected.setHours(0, 0, 0, 0);
+
+    if (selected < today) {
+        const confirm = await Swal.fire({
+            width: 420,
+            showCancelButton: true,
+            confirmButtonText: "강제 변경",
+            cancelButtonText: "취소",
+            buttonsStyling: false,
+            customClass: {
+                popup: "swal-custom",
+                confirmButton: "btn btn-danger",
+                cancelButton: "btn btn-ghost"
+            },
+            html: `
+                ${buildStepHeader(3, ["날짜 선택", "확인", "위험"])}
+                <div class="swal-modal-header">
+                    <h3>과거 폐점일 변경</h3>
+                </div>
+                <p>
+                    과거 날짜로 변경하면<br>
+                    관리자 권한 및 통계에 영향을 줄 수 있습니다.
+                </p>
+            `
+        });
+
+        if (!confirm.isConfirmed) return;
+    }
+
+    // 4️⃣ API 호출
+    try {
+        await updateCloseDate(store.id, date + "T00:00:00");
+
+    } catch (e) {
+        await Swal.fire({
+            icon: "error",
+            title: "수정 실패",
+            text: e.message || "다시 시도해주세요."
+        });
+        return;
+    }
+
+    // 5️⃣ 성공 처리
+    await renderStoreListPage();
+
+    await Swal.fire({
+        icon: "success",
+        title: "폐점일 수정 완료",
+        timer: 1200,
+        showConfirmButton: false
+    });
+}
+export async function showStoreActionModal({ store, onOpen, onClose }) {
+    await Swal.fire({
+        html: buildModalHtml(store.name,store.status),
+        showConfirmButton: false,
+        background: "transparent",
+        backdrop: "rgba(7,8,13,0.65)",
+        customClass: { popup: "store-action-popup" },
+
+        didOpen: (popup) => {
+
+            popup.querySelector("#action-open")?.addEventListener("click", () => {
+                Swal.close();
+                onOpen?.(store);
+            });
+
+            popup.querySelector("#action-close-store")?.addEventListener("click", () => {
+                Swal.close();
+                onClose?.(store);
+            });
+
+            popup.querySelector("#action-update-close")?.addEventListener("click", () => {
+                Swal.close();
+                openUpdateCloseDateModal(store); // 👈 추가
+            });
+
+            popup.querySelector("#action-reopen")?.addEventListener("click", () => {
+                Swal.close();
+                console.log("reopen 준비"); // 나중에
+            });
+
+            popup.querySelectorAll(".action-cancel").forEach(btn => {
+                btn.addEventListener("click", () => Swal.close());
+            });
+        }
+    });
+}
+async function openCloseStoreModal(store) {
+    let selectedDate = null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 1️⃣ Step1: 날짜 선택
+    const step1 = await Swal.fire({
+        width: 470,
+        showCancelButton: true,
+        confirmButtonText: "다음 →",
+        cancelButtonText: "취소",
+        buttonsStyling: false,
+        customClass: {
+            popup: "swal-custom",
+            confirmButton: "btn btn-primary",
+            cancelButton: "btn btn-ghost"
+        },
+        html: `
+            ${buildStepHeader(1, ["날짜 선택", "확인", "위험"])}
+            <div class="swal-modal-header">
+                <h3>${store.name}</h3>
+                <p>폐점일을 설정합니다</p>
+            </div>
+            <div class="date-input-wrapper">
+                <input id="closeDateInput" class="custom-date-input" placeholder="날짜 선택">
+            </div>
+        `,
+        didOpen: () => {
+            const input = document.getElementById("closeDateInput");
+
+            flatpickr(input, {
+                locale: flatpickr.l10ns.ko,
+                dateFormat: "Y-m-d",
+                onChange: (_, dateStr) => selectedDate = dateStr
+            });
+        },
+        preConfirm: () => {
+            if (!selectedDate) {
+                Swal.showValidationMessage("날짜를 선택해주세요");
+                return false;
+            }
+            return selectedDate;
+        }
+    });
+
+    if (!step1.isConfirmed) return;
+
+    const date = step1.value;
+
+    // 2️⃣ Step2: 확인
+    const step2 = await Swal.fire({
+        width: 420,
+        showCancelButton: true,
+        confirmButtonText: "다음 →",
+        cancelButtonText: "← 이전",
+        buttonsStyling: false,
+        customClass: {
+            popup: "swal-custom",
+            confirmButton: "btn btn-violet",
+            cancelButton: "btn btn-ghost"
+        },
+        html: `
+            ${buildStepHeader(2, ["날짜 선택", "확인", "위험"])}
+            <div class="swal-modal-header">
+                <h3>폐점 확인</h3>
+                <p>${store.name}</p>
+            </div>
+            <div class="swal-confirm-card">
+                <div class="swal-confirm-icon">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <div>
+                    <div class="swal-confirm-date">
+                        ${formatDateKo(date)}
+                    </div>
+                    <div class="swal-confirm-meta">
+                        폐점 예정
+                    </div>
+                </div>
+            </div>
+        `
+    });
+
+    if (step2.dismiss === Swal.DismissReason.cancel) {
+        return openCloseStoreModal(store);
+    }
+    if (!step2.isConfirmed) return;
+
+    // 3️⃣ Step3: 위험 처리
+    const selected = new Date(date);
+    selected.setHours(0, 0, 0, 0);
+
+    let force = false;
+
+    // 과거 날짜
+    if (selected < today) {
+        const confirm = await Swal.fire({
+            width: 420,
+            showCancelButton: true,
+            confirmButtonText: "강제 폐점",
+            cancelButtonText: "취소",
+            buttonsStyling: false,
+            customClass: {
+                popup: "swal-custom",
+                confirmButton: "btn btn-danger",
+                cancelButton: "btn btn-ghost"
+            },
+            html: `
+                ${buildStepHeader(3, ["날짜 선택", "확인", "위험"])}
+                <div class="swal-modal-header">
+                    <h3>과거 폐점</h3>
+                </div>
+                <p>과거 날짜로 폐점하시겠습니까?</p>
+            `
+        });
+
+        if (!confirm.isConfirmed) return;
+        force = true;
+    }
+
+    // 미오픈 매장 대응
+    try {
+        await closeStore(store.id, date + "T00:00:00", force);
+
+    } catch (e) {
+        if ((e.code || e.errorCode) === "NOT_OPENED_CANNOT_CLOSE") {
+            const confirm = await Swal.fire({
+                icon: "warning",
+                title: "미오픈 매장",
+                text: "강제로 폐점하시겠습니까?",
+                showCancelButton: true,
+                confirmButtonText: "강제 폐점"
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            await closeStore(store.id, date + "T00:00:00", true);
+        } else {
+            await Swal.fire({
+                icon: "error",
+                title: "폐점 실패",
+                text: e.message || "다시 시도해주세요."
+            });
+            return;
+        }
+    }
+
+    // 4️⃣ 성공 처리
+    await renderStoreListPage();
+
+    await Swal.fire({
+        icon: "success",
+        title: "폐점 완료",
+        timer: 1200,
+        showConfirmButton: false
+    });
+}
+async function openStoreModal(store) {
+    let selectedDate = store.openAt ? store.openAt.split("T")[0] : null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 1️⃣ Step1: 날짜 선택
+    const step1 = await Swal.fire({
+        width: 470,
+        showCancelButton: true,
+        confirmButtonText: "다음 →",
+        cancelButtonText: "취소",
+        buttonsStyling: false,
+        customClass: {
+            popup: "swal-custom",
+            confirmButton: "btn btn-primary",
+            cancelButton: "btn btn-ghost"
+        },
+        html: `
+            ${buildStepHeader(1, ["날짜 선택", "확인", "위험"])}
+            <div class="swal-modal-header">
+                <h3>${store.name}</h3>
+                <p>오픈일을 변경합니다</p>
+            </div>
+
+            <div class="date-input-wrapper">
+                <input id="flatpickrInput" 
+                       class="custom-date-input"
+                       placeholder="날짜 선택">
+            </div>
+
+            <div class="swal-guide-box">
+                <div class="swal-guide-text">
+                    운영 정책에 따라 일부 변경은 제한될 수 있습니다.
+                </div>
+            </div>
         `,
         didOpen: () => {
             const input = document.getElementById("flatpickrInput");
@@ -49,7 +399,6 @@ async function openStoreModal(store) {
                 dateFormat: "Y-m-d",
                 allowInput: true,
                 clickOpens: false,
-                minDate: null,
                 onChange(selectedDates, dateStr, instance) {
                     if (!selectedDates.length) return;
                     selectedDate = dateStr;
@@ -79,36 +428,38 @@ async function openStoreModal(store) {
 
     const date = step1.value;
 
+    // 2️⃣ Step2: 확인
     const step2 = await Swal.fire({
         width: 420,
         showCancelButton: true,
-        confirmButtonText: "저장하기",
+        confirmButtonText: "다음 →",
         cancelButtonText: "← 이전",
         buttonsStyling: false,
         customClass: {
             popup: "swal-custom",
-            confirmButton: "btn btn-primary",
+            confirmButton: "btn btn-violet",
             cancelButton: "btn btn-ghost"
         },
         html: `
-        <div class="swal-modal-header">
-            <h3>오픈일 확인</h3>
-            <p>${store.name}</p>
-        </div>
+            ${buildStepHeader(2, ["날짜 선택", "확인", "위험"])}
+            <div class="swal-modal-header">
+                <h3>오픈일 확인</h3>
+                <p>${store.name}</p>
+            </div>
 
-        <div class="swal-confirm-card">
-            <div class="swal-confirm-icon">
-                <i class="fa-regular fa-calendar-check"></i>
-            </div>
-            <div>
-                <div class="swal-confirm-date">
-                    ${formatDateKo(date)}
+            <div class="swal-confirm-card">
+                <div class="swal-confirm-icon">
+                    <i class="fa-regular fa-calendar-check"></i>
                 </div>
-                <div class="swal-confirm-meta">
-                    변경 예정
+                <div>
+                    <div class="swal-confirm-date">
+                        ${formatDateKo(date)}
+                    </div>
+                    <div class="swal-confirm-meta">
+                        변경 예정
+                    </div>
                 </div>
             </div>
-        </div>
         `
     });
 
@@ -117,17 +468,15 @@ async function openStoreModal(store) {
     }
     if (!step2.isConfirmed) return;
 
+    // 3️⃣ Step3: 위험 처리
     let force = false;
-
-    const today = new Date();
     const selected = new Date(date);
+    selected.setHours(0, 0, 0, 0);
 
-    // 🔥 과거 날짜 → 요청 전에 처리
+    // 🔥 과거 날짜
     if (selected < today) {
         const confirm = await Swal.fire({
-            icon: "warning",
-            title: "과거 날짜 선택",
-            text: "과거 날짜로 변경하시겠습니까?",
+            width: 420,
             showCancelButton: true,
             confirmButtonText: "강제 변경",
             cancelButtonText: "취소",
@@ -136,7 +485,14 @@ async function openStoreModal(store) {
                 popup: "swal-custom",
                 confirmButton: "btn btn-danger",
                 cancelButton: "btn btn-ghost"
-            }
+            },
+            html: `
+                ${buildStepHeader(3, ["날짜 선택", "확인", "위험"])}
+                <div class="swal-modal-header">
+                    <h3>과거 날짜 변경</h3>
+                </div>
+                <p>과거 날짜로 변경하시겠습니까?</p>
+            `
         });
 
         if (!confirm.isConfirmed) return;
@@ -147,18 +503,11 @@ async function openStoreModal(store) {
         await updateStoreOpenDate(store.id, date + "T00:00:00", force);
 
     } catch (e) {
-        console.error(e);
 
-        // 🔥 운영중 → 미래 변경 (서버에서만 판단)
-        if (e.code === "OPERATING_TO_FUTURE") {
+        // 🔥 운영중 → 미래 변경
+        if ((e.code || e.errorCode) === "OPERATING_TO_FUTURE") {
             const confirm = await Swal.fire({
-                icon: "warning",
-                title: "강제 변경",
-                html: `
-                운영 중 매장의 오픈일을 변경하면<br>
-                데이터에 영향을 줄 수 있습니다.<br><br>
-                계속 진행하시겠습니까?
-            `,
+                width: 420,
                 showCancelButton: true,
                 confirmButtonText: "강제 변경",
                 cancelButtonText: "취소",
@@ -167,7 +516,17 @@ async function openStoreModal(store) {
                     popup: "swal-custom",
                     confirmButton: "btn btn-danger",
                     cancelButton: "btn btn-ghost"
-                }
+                },
+                html: `
+                    ${buildStepHeader(3, ["날짜 선택", "확인", "위험"])}
+                    <div class="swal-modal-header">
+                        <h3>운영 중 변경</h3>
+                    </div>
+                    <p>
+                        운영 중 매장의 오픈일을 변경하면<br>
+                        데이터에 영향을 줄 수 있습니다.
+                    </p>
+                `
             });
 
             if (!confirm.isConfirmed) return;
@@ -183,6 +542,7 @@ async function openStoreModal(store) {
         }
     }
 
+    // 4️⃣ 성공 처리
     await renderStoreListPage();
 
     await Swal.fire({
@@ -192,6 +552,94 @@ async function openStoreModal(store) {
         timer: 1200,
         showConfirmButton: false
     });
+}
+async function openStoreActionModal(store) {
+    return showStoreActionModal({
+        store,
+        onOpen: () => openStoreModal(store),
+        onClose: () => openCloseStoreModal(store)
+    });
+}
+function buildModalHtml(storeName, status) {
+
+    const isClosed = status === "CLOSED";
+
+    return `
+    <div class="sam-modal">
+
+      <div class="sam-header">
+        <div class="sam-store-badge">
+          <div class="sam-icon">
+            <i class="fa-solid fa-shop"></i>
+          </div>
+          <div class="sam-store-label">
+            <span class="sam-store-name">${storeName}</span>
+            <span class="sam-store-sub">작업을 선택하세요</span>
+          </div>
+        </div>
+        <button class="sam-close action-cancel">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="sam-divider"></div>
+
+      <div class="sam-body">
+
+        ${
+        !isClosed ? `
+            <button class="sam-action-btn sam-primary" id="action-open">
+                <div class="sam-btn-icon sam-violet">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </div>
+                <div class="sam-btn-text">
+                    <span class="sam-btn-label">오픈 변경</span>
+                    <span class="sam-btn-desc">영업일 및 오픈 일정 수정</span>
+                </div>
+                <i class="fa-solid fa-chevron-right sam-btn-arrow"></i>
+            </button>
+
+            <button class="sam-action-btn sam-danger" id="action-close-store">
+                <div class="sam-btn-icon sam-rose">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <div class="sam-btn-text">
+                    <span class="sam-btn-label">폐점 처리</span>
+                    <span class="sam-btn-desc">매장을 폐점 또는 폐점 예정 상태로 전환</span>
+                </div>
+                <i class="fa-solid fa-chevron-right sam-btn-arrow"></i>
+            </button>
+            `
+            :
+            `
+            <button class="sam-action-btn sam-primary" id="action-reopen">
+                <div class="sam-btn-icon sam-teal">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </div>
+                <div class="sam-btn-text">
+                    <span class="sam-btn-label">재오픈</span>
+                    <span class="sam-btn-desc">매장을 다시 운영 상태로 전환</span>
+                </div>
+                <i class="fa-solid fa-chevron-right sam-btn-arrow"></i>
+            </button>
+
+            <button class="sam-action-btn sam-violet" id="action-update-close">
+                <div class="sam-btn-icon sam-violet">
+                    <i class="fa-solid fa-pen"></i>
+                </div>
+                <div class="sam-btn-text">
+                    <span class="sam-btn-label">폐점일 수정</span>
+                    <span class="sam-btn-desc">폐점 날짜를 변경합니다</span>
+                </div>
+                <i class="fa-solid fa-chevron-right sam-btn-arrow"></i>
+            </button>
+            `
+    }
+
+        <button class="sam-cancel-btn action-cancel">취소</button>
+
+      </div>
+    </div>`;
 }
 export async function renderStoreListPage() {
     try {
@@ -247,16 +695,15 @@ export async function renderStoreListPage() {
             const region = document.getElementById("regionFilter").value;
             const subRegion = document.getElementById("subRegionFilter").value;
             const status = document.getElementById("statusFilter").value;
-            console.log("🔥 요청값", { region, subRegion, status });
 
             const data = await fetchStores({
                 region,
-                subRegion,   // 🔥 변경
+                subRegion,
                 status,
                 page: currentPage,
                 size
             });
-            currentStores = data.content; // 🔥 이거 필수
+            currentStores = data.content;
 
             renderList(data.content);
             renderPagination(data.total);
@@ -270,7 +717,7 @@ export async function renderStoreListPage() {
             const storeId = item.dataset.id;
             const store = currentStores.find(s => s.id == storeId);
 
-            openStoreModal(store);
+            openStoreActionModal(store);
         });
         function getStatusBadgeClass(status) {
             switch (status) {

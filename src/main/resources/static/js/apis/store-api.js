@@ -86,6 +86,59 @@ export async function fetchStores({
 
     return res.json();
 }
+export async function closeStore(storeId, closedAt, force = false) {
+    try {
+        const res = await fetchWithAuth(`/api/stores/${storeId}/close`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                closedAt,
+                force
+            })
+        });
+
+        if (!res.ok) {
+            let err;
+            try {
+                err = await res.json();
+            } catch {
+                err = { message: "서버 오류" };
+            }
+            throw err;
+        }
+
+        const data = await res.json();
+
+        return data;
+
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+}
+export async function updateCloseDate(storeId, closedAt, force = false) {
+    const res = await fetchWithAuth(`/api/stores/${storeId}/closed-date`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            closedAt,
+            force
+        })
+    });
+
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({
+            message: "서버 오류"
+        }));
+        throw err;
+    }
+
+    return res.json();
+}
 export async function updateStoreOpenDate(storeId, openAt, force = false) {
     try {
         const res = await fetchWithAuth(`/api/stores/${storeId}/open-date`, {

@@ -14,6 +14,37 @@ export function sortByStore(data) {
         a.storeName.localeCompare(b.storeName, 'ko')
     );
 }
+export function buildStepHeader(step, labels = []) {
+    return `
+        <div class="swal-step-bar">
+            ${labels.map((label, i) => {
+        const index = i + 1;
+
+        return `
+                    <div class="swal-step-node">
+                        <div class="swal-step-circle 
+                            ${index === step ? 'active' : ''}
+                            ${index < step ? 'done' : ''}
+                        ">
+                            ${index}
+                        </div>
+                        <div class="swal-step-label 
+                            ${index === step ? 'active' : ''}
+                        ">
+                            ${label}
+                        </div>
+                    </div>
+
+                    ${i < labels.length - 1 ? `
+                        <div class="swal-step-line 
+                            ${index < step ? 'done' : ''}
+                        "></div>
+                    ` : ''}
+                `;
+    }).join('')}
+        </div>
+    `;
+}
 export async function openContactModal() {
     const defaultMsg = "과거 날짜로 오픈일 변경 요청";
 

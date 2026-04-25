@@ -1,6 +1,8 @@
 package com.parkvina.fakejumping.controller;
 
 import com.parkvina.fakejumping.dto.*;
+import com.parkvina.fakejumping.dto.login.LoginRequest;
+import com.parkvina.fakejumping.dto.login.LoginResponse;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.enums.AdminRole;
@@ -8,16 +10,12 @@ import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.StoreMapper;
 import com.parkvina.fakejumping.security.AuthService;
 import com.parkvina.fakejumping.service.JwtUtils;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.NonNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.awt.*;
 
 @RestController
 @RequestMapping("/auth")

@@ -138,6 +138,11 @@
 
         FROM store
     </select>
+    <update id="updateClosedAt">
+        UPDATE store
+        SET closed_at=#{closedAt}
+        WHERE id=#{id}
+    </update>
     <update id="updateOpenAt">
         UPDATE store
         SET open_at=#{openAt}

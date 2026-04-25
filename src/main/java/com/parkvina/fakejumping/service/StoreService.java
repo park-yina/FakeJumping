@@ -2,6 +2,8 @@ package com.parkvina.fakejumping.service;
 
 import com.parkvina.fakejumping.controller.CustomException;
 import com.parkvina.fakejumping.dto.*;
+import com.parkvina.fakejumping.dto.login.ResetPasswordRequest;
+import com.parkvina.fakejumping.dto.login.ResetPasswordResult;
 import com.parkvina.fakejumping.dto.store.*;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
@@ -12,7 +14,6 @@ import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.StoreMapper;
 import com.parkvina.fakejumping.security.AuthService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -63,6 +64,7 @@ public class StoreService {
 
         return StoreStatus.NOT_OPENED;
     }
+
     public String generateTempPassword(int len) {
         SecureRandom secureRandom = new SecureRandom();
         String tempPasswordStr = IntStream.concat(
@@ -91,9 +93,11 @@ public class StoreService {
             LocalDateTime closedAt
     ) {
         Store store = storeMapper.findById(storeId);
+
         if (store == null) {
-            throw new CustomException("매장을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+            throw new CustomException("STORE_NOT_FOUND", "매장을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
         }
+
         if (closedAt == null) {
             throw new CustomException(
                     "CLOSED_DATE_REQUIRED",
@@ -101,6 +105,8 @@ public class StoreService {
                     HttpStatus.BAD_REQUEST
             );
         }
+
+        // 이미 폐점된 매장만 수정 가능
         if (store.getClosedAt() == null) {
             throw new CustomException(
                     "NOT_CLOSED_STORE",
@@ -108,6 +114,8 @@ public class StoreService {
                     HttpStatus.BAD_REQUEST
             );
         }
+
+        // 오픈일 이전 폐점 방지
         if (store.getOpenAt() != null && closedAt.isBefore(store.getOpenAt())) {
             throw new CustomException(
                     "INVALID_CLOSE_DATE",
@@ -115,15 +123,16 @@ public class StoreService {
                     HttpStatus.BAD_REQUEST
             );
         }
+
         storeMapper.updateClosedAt(storeId, closedAt);
         store.setClosedAt(closedAt);
+
         return new UpdateCloseDateResponse(
                 storeId,
                 closedAt,
                 resolveStatus(store)
         );
     }
-
     @Transactional
     public UpdateCloseDateResponse closeStore(
             Long storeId,
@@ -142,10 +151,19 @@ public class StoreService {
 
         if (!force) {
             if (store.getClosedAt() != null) {
-                throw new CustomException("이미 폐점된 매장입니다.", HttpStatus.BAD_REQUEST);
+                throw new CustomException(
+                        "ALREADY_CLOSED",
+                        "이미 폐점된 매장입니다.",
+                        HttpStatus.BAD_REQUEST
+                );
             }
+
             if (store.getOpenAt() == null) {
-                throw new CustomException("오픈되지 않은 매장은 폐점할 수 없습니다.", HttpStatus.BAD_REQUEST);
+                throw new CustomException(
+                        "NOT_OPENED_CANNOT_CLOSE",
+                        "오픈되지 않은 매장은 폐점할 수 없습니다.",
+                        HttpStatus.BAD_REQUEST
+                );
             }
             if (closedAt.isBefore(store.getOpenAt())) {
                 throw new CustomException("폐점일은 오픈일보다 이전일 수 없습니다.", HttpStatus.BAD_REQUEST);

@@ -2,6 +2,8 @@ package com.parkvina.fakejumping.security;
 
 import com.parkvina.fakejumping.controller.CustomException;
 import com.parkvina.fakejumping.dto.*;
+import com.parkvina.fakejumping.dto.login.LoginRequest;
+import com.parkvina.fakejumping.dto.login.LoginResponse;
 import com.parkvina.fakejumping.dto.store.StoreSummary;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.AdminRefreshToken;
