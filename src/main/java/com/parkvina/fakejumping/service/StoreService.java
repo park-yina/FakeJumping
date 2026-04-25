@@ -153,7 +153,9 @@ public class StoreService {
         }
 
         storeMapper.updateClosedAt(storeId, closedAt);
-        adminMapper.deactivateStoreAdmins(storeId);
+        if (!closedAt.isAfter(LocalDateTime.now())) {
+            adminMapper.deactivateStoreAdmins(storeId);
+        }
 
         store.setClosedAt(closedAt);
 
