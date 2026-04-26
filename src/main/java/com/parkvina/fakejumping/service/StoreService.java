@@ -106,7 +106,6 @@ public class StoreService {
             );
         }
 
-        // 이미 폐점된 매장만 수정 가능
         if (store.getClosedAt() == null) {
             throw new CustomException(
                     "NOT_CLOSED_STORE",
@@ -115,7 +114,6 @@ public class StoreService {
             );
         }
 
-        // 오픈일 이전 폐점 방지
         if (store.getOpenAt() != null && closedAt.isBefore(store.getOpenAt())) {
             throw new CustomException(
                     "INVALID_CLOSE_DATE",
@@ -127,12 +125,21 @@ public class StoreService {
         storeMapper.updateClosedAt(storeId, closedAt);
         store.setClosedAt(closedAt);
 
+        LocalDateTime now = LocalDateTime.now();
+
+        LocalDateTime closeEndOfDay = closedAt.toLocalDate().atTime(23, 59, 59);
+
+        if (!closeEndOfDay.isAfter(now)) {
+            adminMapper.deactivateStoreAdmins(storeId);
+        }
+
         return new UpdateCloseDateResponse(
                 storeId,
                 closedAt,
                 resolveStatus(store)
         );
     }
+
     @Transactional
     public UpdateCloseDateResponse reopenStore(Long storeId) {
 
@@ -167,6 +174,7 @@ public class StoreService {
                 resolveStatus(store)
         );
     }
+
     @Transactional
     public UpdateCloseDateResponse closeStore(
             Long storeId,
@@ -218,6 +226,7 @@ public class StoreService {
         );
     }
 
+    @Transactional
     public UpdateOpenDateResponse updateStoreOpenDate(
             Long storeId,
             LocalDateTime openAt,
@@ -237,10 +246,11 @@ public class StoreService {
             );
         }
 
-        LocalDate today = LocalDate.now();
-        LocalDate openDate = openAt.toLocalDate();
+        LocalDateTime now = LocalDateTime.now();
 
-        if (openDate.isBefore(today) && !force) {
+        LocalDateTime openStartOfDay = openAt.toLocalDate().atStartOfDay();
+
+        if (openStartOfDay.isBefore(now) && !force) {
             throw new CustomException(
                     "OPEN_DATE_PAST",
                     "과거 날짜 변경은 제한됩니다.",
@@ -250,7 +260,10 @@ public class StoreService {
 
         StoreStatus status = resolveStatus(store);
 
-        if (!force && status == StoreStatus.OPERATING && openDate.isAfter(today)) {
+        if (!force
+                && status == StoreStatus.OPERATING
+                && openStartOfDay.isAfter(now)) {
+
             throw new CustomException(
                     "OPERATING_TO_FUTURE",
                     "운영 중 매장의 오픈일을 미래로 변경할 수 없습니다.",
@@ -258,13 +271,12 @@ public class StoreService {
             );
         }
 
-        storeMapper.updateOpenAt(storeId, openAt);
-
-        store.setOpenAt(openAt);
+        storeMapper.updateOpenAt(storeId, openStartOfDay);
+        store.setOpenAt(openStartOfDay);
 
         return new UpdateOpenDateResponse(
                 storeId,
-                openAt,
+                openStartOfDay,
                 resolveStatus(store)
         );
     }
