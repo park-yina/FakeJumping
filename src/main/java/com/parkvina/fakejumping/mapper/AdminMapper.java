@@ -55,7 +55,13 @@ public interface AdminMapper {
     void deactivateStoreAdmins(Long storeId);
 
     void updateAdminCredentials(Admin admin);
-
+    @Update("""
+UPDATE admin
+SET status = 'ACTIVE'
+WHERE store_id = #{storeId}
+AND role = 'STORE_ADMIN'
+""")
+    void activateStoreAdmins(Long storeId);
     void deleteById(Long id);
 
     void insertAdmin(Admin admin);

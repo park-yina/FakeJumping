@@ -6,6 +6,8 @@ import com.parkvina.fakejumping.dto.login.ResetPasswordResult;
 import com.parkvina.fakejumping.dto.store.*;
 import com.parkvina.fakejumping.service.StoreService;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
+import org.apache.ibatis.annotations.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -111,6 +113,14 @@ public class AdminController {
                 storeService.closeStore(storeId, req.getClosedAt(), req.getForce());
 
         return ResponseEntity.ok(res);
+    }
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PutMapping("/stores/{storeId}/reopen")
+    public ResponseEntity<UpdateCloseDateResponse>reopenStore(
+            @PathVariable Long storeId
+    ){
+        UpdateCloseDateResponse res=storeService.reopenStore(storeId);
+        return ResponseEntity.status(HttpStatus.OK).body(res);
     }
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PutMapping("/stores/{storeId}/closed-date")

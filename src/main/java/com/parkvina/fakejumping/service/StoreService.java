@@ -134,6 +134,39 @@ public class StoreService {
         );
     }
     @Transactional
+    public UpdateCloseDateResponse reopenStore(Long storeId) {
+
+        Store store = storeMapper.findById(storeId);
+
+        if (store == null) {
+            throw new CustomException(
+                    "STORE_NOT_FOUND",
+                    "매장을 찾을 수 없습니다.",
+                    HttpStatus.NOT_FOUND
+            );
+        }
+
+        if (store.getClosedAt() == null) {
+            throw new CustomException(
+                    "NOT_CLOSED_STORE",
+                    "폐점된 매장이 아닙니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        storeMapper.updateClosedAt(storeId, null);
+
+        adminMapper.activateStoreAdmins(storeId);
+
+        store.setClosedAt(null);
+
+        return new UpdateCloseDateResponse(
+                storeId,
+                null,
+                resolveStatus(store)
+        );
+    }
+    @Transactional
     public UpdateCloseDateResponse closeStore(
             Long storeId,
             LocalDateTime closedAt,

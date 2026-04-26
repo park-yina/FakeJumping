@@ -1,6 +1,6 @@
 import { createStoreApi } from "./apis/store-api.js";
 import { renderHome, renderTempSummary } from "./uis/common-uis.js";
-import {renderStoreSummary,renderRegionSummary} from "./uis/store-uis.js";
+import {renderRegionSummary} from "./uis/store-uis.js";
 import {navigate, sortByDateAsc, sortByDateDesc, sortByStore} from "./utils/utils.js";
 
 
