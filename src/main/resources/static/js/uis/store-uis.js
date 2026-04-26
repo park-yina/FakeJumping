@@ -4,9 +4,9 @@ import {
     fetchPendingStoreSummary,
     fetchMonthlySummary, fetchStores, fetchRegions, fetchSubRegions, updateStoreOpenDate, closeStore, updateCloseDate
 } from "../apis/store-api.js";
-import {searchAddress, navigate, createStoreHandler, buildStepHeader} from "../utils/utils.js";
+import {searchAddress, navigate, createStoreHandler} from "../utils/utils.js";
 import {formatDateKo} from "./myStore-uis.js";
-import {openModal} from "../modal/openModal.js";
+import {openModal, openReopenModal} from "../modal/openModal.js";
 import {closeModal} from "../modal/closeModal.js";
 import {updateCloseModal} from "../modal/updateCloseModal.js";
 let fp;
@@ -38,7 +38,7 @@ export async function showStoreActionModal({ store, onOpen, onClose }) {
 
             popup.querySelector("#action-reopen")?.addEventListener("click", () => {
                 Swal.close();
-                console.log("reopen 준비"); // 나중에
+                openReopenModal(store);
             });
 
             popup.querySelectorAll(".action-cancel").forEach(btn => {

@@ -144,6 +144,7 @@ public class StoreService {
                     "매장을 찾을 수 없습니다.",
                     HttpStatus.NOT_FOUND
             );
+
         }
 
         if (store.getClosedAt() == null) {

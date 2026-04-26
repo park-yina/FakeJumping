@@ -157,7 +157,7 @@ export async function updateStoreOpenDate(storeId, openAt, force = false) {
             try {
                 err = await res.json();
             } catch {
-                err = { message: "서버 오류" };
+                err = {message: "서버 오류"};
             }
             throw err;
         }
@@ -184,4 +184,12 @@ export async function updateStoreOpenDate(storeId, openAt, force = false) {
 
         throw e;
     }
+}
+export async function reopenStore(storeId) {
+    const res = await fetchWithAuth(`/api/stores/${storeId}/reopen`, {
+        method: "PUT"
+    });
+    if (!res.ok) throw res;
+
+    return res.json();
 }
