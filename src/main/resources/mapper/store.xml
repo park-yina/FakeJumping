@@ -9,8 +9,8 @@
             useGeneratedKeys="true"
             keyProperty="id">
 
-        INSERT INTO store (name, region, city,district,address,is_active)
-        VALUES (#{name}, #{region}, #{city},#{district},#{address},#{isActive})
+        INSERT INTO store (name, region, city, district, address, is_active)
+        VALUES (#{name}, #{region}, #{city}, #{district}, #{address}, #{isActive})
 
     </insert>
     <select id="findStoresPaged" resultType="com.parkvina.fakejumping.entity.Store">
@@ -103,55 +103,85 @@
         </if>
     </select>
     <select id="countStoreSummary" resultType="map">
-        SELECT
-        COUNT(*) AS total,
+        SELECT COUNT(*) AS total,
 
-        -- 운영중
-        SUM(CASE
-        WHEN is_active = 1
-        AND closed_at IS NULL
-        AND open_at IS NOT NULL
-        AND open_at <![CDATA[ <= ]]> NOW()        THEN 1 ELSE 0
-        END) AS operating,
+               -- 운영중
+               SUM(CASE
+                       WHEN is_active = 1
+                           AND closed_at IS NULL
+                           AND open_at IS NOT NULL
+                           AND open_at <![CDATA[ <= ]]> NOW() THEN 1
+                       ELSE 0
+                   END) AS operating,
 
-        -- 오픈 예정
-        SUM(CASE
-        WHEN is_active = 1
-        AND closed_at IS NULL
-        AND open_at > NOW()
-        THEN 1 ELSE 0
-        END) AS scheduled,
+               -- 오픈 예정
+               SUM(CASE
+                       WHEN is_active = 1
+                           AND closed_at IS NULL
+                           AND open_at > NOW()
+                           THEN 1
+                       ELSE 0
+                   END) AS scheduled,
 
-        -- 폐점
-        SUM(CASE
-        WHEN closed_at IS NOT NULL
-        THEN 1 ELSE 0
-        END) AS closed,
+               -- 폐점
+               SUM(CASE
+                       WHEN closed_at IS NOT NULL
+                           THEN 1
+                       ELSE 0
+                   END) AS closed,
 
-        -- 오픈 미정
-        SUM(CASE
-        WHEN is_active = 1
-        AND closed_at IS NULL
-        AND open_at IS NULL
-        THEN 1 ELSE 0
-        END) AS inactive
+               -- 오픈 미정
+               SUM(CASE
+                       WHEN is_active = 1
+                           AND closed_at IS NULL
+                           AND open_at IS NULL
+                           THEN 1
+                       ELSE 0
+                   END) AS inactive
 
         FROM store
+    </select>
+    <select id="countClosedStores" resultType="long">
+        SELECT COUNT(*)
+        FROM store
+        WHERE closed_at IS NOT NULL
+          AND open_at IS NOT NULL
+          AND <![CDATA[
+        closed_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+        ]]>
+    </select>
+    <select id="countMonthlyClosedStores" resultType="int">
+        SELECT COUNT(*)
+        FROM store
+        WHERE closed_at IS NOT NULL
+          AND open_at IS NOT NULL
+          AND DATE(closed_at) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+          AND <![CDATA[
+        DATE(closed_at) < DATE_ADD(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH)
+        ]]>
+    </select>
+    <select id="countScheduledCloseStores" resultType="int">
+        SELECT COUNT(*)
+        FROM store
+        WHERE closed_at IS NOT NULL
+          AND open_at IS NOT NULL
+          AND <![CDATA[
+        closed_at > NOW()
+        ]]>
     </select>
     <update id="updateClosedAt">
         UPDATE store
         SET closed_at=#{closedAt}
-        WHERE id=#{id}
+        WHERE id = #{id}
     </update>
     <update id="updateOpenAt">
         UPDATE store
         SET open_at=#{openAt}
-        WHERE id=#{id}
+        WHERE id = #{id}
     </update>
     <select id="findMyStoreSummary" resultType="com.parkvina.fakejumping.dto.store.MyStoreSummary">
-        SELECT
-            open_at AS openAt,
-            created_at AS createdAt
+        SELECT open_at    AS openAt,
+               created_at AS createdAt
         FROM store
         WHERE id = #{storeId}
     </select>
@@ -178,8 +208,9 @@
         ORDER BY count DESC
     </select>
     <select id="findPendingStoreInfo" resultType="com.parkvina.fakejumping.dto.store.PendingStoreInfo">
-SELECT id,created_at AS createdAt,region,name from store where is_active=1 AND open_at IS NULL ORDER BY created_at DESC
-<if test="limit!=null">LIMIT #{limit}</if>
+        SELECT id,created_at AS createdAt,region,name from store where is_active=1 AND open_at IS NULL ORDER BY
+        created_at DESC
+        <if test="limit!=null">LIMIT #{limit}</if>
 
     </select>
 </mapper>
