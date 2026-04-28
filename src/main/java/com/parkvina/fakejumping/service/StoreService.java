@@ -487,14 +487,11 @@ public class StoreService {
         );
     }
 
-    public Long countClosedStores() {
-        return storeMapper.countClosedStores();
-    }
-    public int  countScheduledCloseStores(){
-        return storeMapper.countScheduledCloseStores();
-    }
-    public int countMonthlyClosedStores(){
-        return storeMapper.countMonthlyClosedStores();
+    public StoreKpiResponse getStoreKpi(){
+        Long closed=storeMapper.countClosedStores();
+        int scheduled=storeMapper.countScheduledCloseStores();
+        int monthlyClosed=storeMapper.countMonthlyClosedStores();
+        return new StoreKpiResponse(closed,scheduled,monthlyClosed);
     }
     public Map<String, Object> getStoreSummary() {
         return storeMapper.countStoreSummary();

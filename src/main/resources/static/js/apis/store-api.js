@@ -37,7 +37,11 @@ export async function fetchRegionSummary() {
 
     return res.json();
 }
-
+export async function fetchStoreKpi(){
+    const res= await fetchWithAuth("/api/admin/kpi/stores");
+    if (!res.ok) throw res;
+    return res.json();
+}
 export async function fetchPendingStoreSummary() {
     const res = await fetchWithAuth("/api/stores/pending-summary");
 

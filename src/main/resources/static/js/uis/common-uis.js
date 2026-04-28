@@ -1,6 +1,12 @@
 import { fetchTempSummary } from "../apis/common-apis.js";
 import { navigate,setActive } from "../utils/utils.js";
-import {renderMonthlySummary, renderPendingStoreSummary, renderRegionSummary,renderStoreListPage} from "./store-uis.js";
+import {
+    renderMonthlySummary,
+    renderPendingStoreSummary,
+    renderRegionSummary,
+    renderStoreKpi,
+    renderStoreListPage
+} from "./store-uis.js";
 import {renderMyStoreSummary} from "./myStore-uis.js";
 import {renderStoreSummary} from "../summary/storeSummary.js";
 export function renderCard({ title, content = "", clickable = false, className = "" }) {
@@ -36,6 +42,7 @@ export async function renderHome() {
   <div id="temp-summary"></div>
   <div id="monthly-summary"></div>
   <div id="pendingStore-summary"></div>
+  <div id="store-kpi"></div>
 </div>
     `;
 
@@ -44,7 +51,8 @@ export async function renderHome() {
         renderRegionSummary(),
         renderTempSummary(),
         renderMonthlySummary(),
-        renderPendingStoreSummary()
+        renderPendingStoreSummary(),
+        renderStoreKpi()
     ]);
 }
 

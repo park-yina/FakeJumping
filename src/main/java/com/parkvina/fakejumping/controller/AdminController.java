@@ -104,6 +104,12 @@ public class AdminController {
 
     }
     @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @GetMapping("/admin/kpi/stores")
+    public ResponseEntity<StoreKpiResponse>getStoreKpi() {
+        StoreKpiResponse storeKpiResponse = storeService.getStoreKpi();
+        return ResponseEntity.status(HttpStatus.OK).body(storeKpiResponse);
+    }
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PutMapping("/stores/{storeId}/close")
     public ResponseEntity<UpdateCloseDateResponse> closeStore(
             @PathVariable Long storeId,

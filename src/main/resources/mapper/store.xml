@@ -155,9 +155,10 @@
         FROM store
         WHERE closed_at IS NOT NULL
           AND open_at IS NOT NULL
-          AND DATE(closed_at) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
           AND <![CDATA[
-        DATE(closed_at) < DATE_ADD(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH)
+        DATE(closed_at) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+          AND DATE(closed_at) < DATE_ADD(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH)
+          AND closed_at <= NOW()
         ]]>
     </select>
     <select id="countScheduledCloseStores" resultType="int">

@@ -2,7 +2,8 @@ import {
     fetchStoreSummary,
     fetchRegionSummary,
     fetchPendingStoreSummary,
-    fetchMonthlySummary, fetchStores, fetchRegions, fetchSubRegions, updateStoreOpenDate, closeStore, updateCloseDate
+    fetchMonthlySummary, fetchStores, fetchRegions, fetchSubRegions, updateStoreOpenDate, closeStore, updateCloseDate,
+    fetchStoreKpi
 } from "../apis/store-api.js";
 import {searchAddress, navigate, createStoreHandler} from "../utils/utils.js";
 import {formatDateKo} from "./myStore-uis.js";
@@ -452,6 +453,70 @@ function resetCreateStoreForm() {
     document.getElementById("region").value = "";
     document.getElementById("city").value = "";
     document.getElementById("district").value = "";
+}
+export async function renderStoreKpi() {
+    try {
+        const data = await fetchStoreKpi();
+        const el = document.getElementById("store-kpi");
+
+        el.innerHTML = `
+        <div class="card store-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="dot dot-gray"></span>
+                    폐점 현황
+                </div>
+                <button class="refresh-btn" title="새로고침">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+
+            <div class="stat-value">${data.closed}</div>
+            <div class="stat-label">전체 폐점</div>
+
+            <div class="store-meta">
+                <span class="kpi-item">
+                    이달 폐점 ${data.monthlyClosed}
+                    <i class="fa-solid fa-circle-question tooltip-icon"
+                       title="이번 달에 실제로 폐점 완료된 매장 수"></i>
+                </span>
+
+                &nbsp;·&nbsp;
+
+                <span class="kpi-item">
+                    폐점 예정 ${data.scheduled}
+                    <i class="fa-solid fa-circle-question tooltip-icon"
+                       title="현재 기준 운영 중이며 향후 폐점 예정인 매장 수"></i>
+                </span>
+            </div>
+
+            <div class="store-hint">
+                <i class="fa-solid fa-arrow-pointer"></i>
+                클릭하면 폐점 매장 목록으로 이동
+            </div>
+        </div>
+        `;
+
+        el.querySelector(".store-card").addEventListener("click", (e) => {
+            navigate("closed-store", e.currentTarget);
+        });
+
+        el.querySelector(".refresh-btn").addEventListener("click", (e) => {
+            e.stopPropagation();
+            renderStoreKpi();
+        });
+
+    } catch (e) {
+        console.error(e);
+        document.getElementById("store-kpi").innerHTML = `
+            <div class="card">
+                <div class="error-card">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    폐점 데이터 불러오기 실패
+                </div>
+            </div>
+        `;
+    }
 }
 export async function renderPendingStoreSummary() {
     try {
