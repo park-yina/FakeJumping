@@ -487,7 +487,15 @@ public class StoreService {
         );
     }
 
-
+    public Long countClosedStores() {
+        return storeMapper.countClosedStores();
+    }
+    public int  countScheduledCloseStores(){
+        return storeMapper.countScheduledCloseStores();
+    }
+    public int countMonthlyClosedStores(){
+        return storeMapper.countMonthlyClosedStores();
+    }
     public Map<String, Object> getStoreSummary() {
         return storeMapper.countStoreSummary();
     }
