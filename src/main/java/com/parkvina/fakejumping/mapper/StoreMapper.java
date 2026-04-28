@@ -119,9 +119,10 @@ WHERE is_active = 1
 """)
     List<Store> findThisMonthUpcoming();
     List<RegionSummary> regionSummary();
-
+    Long countClosedStores();
+    int countScheduledCloseStores();
+    int countMonthlyClosedStores();
     List<PendingStoreInfo> findPendingStoreInfo(@Param("limit") Integer limit);
-
     void updateOpenAt(
             @Param("id") Long id,
             @Param("openAt") LocalDateTime openAt
