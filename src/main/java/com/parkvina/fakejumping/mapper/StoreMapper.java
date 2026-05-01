@@ -22,15 +22,17 @@ public interface StoreMapper {
                     """
     )
     Store findById(Long id);
+
     @Select("""
-SELECT DISTINCT s.id
-FROM store s
-JOIN admin a ON a.store_id = s.id
-WHERE s.closed_at <= #{now}
-AND a.status = 'ACTIVE'
-AND a.role = 'STORE_ADMIN'
-""")
+            SELECT DISTINCT s.id
+            FROM store s
+            JOIN admin a ON a.store_id = s.id
+            WHERE s.closed_at <= #{now}
+            AND a.status = 'ACTIVE'
+            AND a.role = 'STORE_ADMIN'
+            """)
     List<Long> findStoresToDeactivateAdmins(LocalDateTime now);
+
     @Select("""
             SELECT  *
             FROM store
@@ -47,7 +49,6 @@ AND a.role = 'STORE_ADMIN'
                     """
     )
     Store findByAddress(@Param("address") String address);
-
     @Select("""
             SELECT DISTINCT region
             FROM store
@@ -56,25 +57,52 @@ AND a.role = 'STORE_ADMIN'
     List<String> findRegions();
 
     @Select("""
-    SELECT DISTINCT
-        CASE
-            WHEN city IS NULL OR city = '' THEN district
-            ELSE city
-        END
-    FROM store
-    WHERE region = #{region}
-    ORDER BY 1
-""")
+                SELECT DISTINCT
+                    CASE
+                        WHEN city IS NULL OR city = '' THEN district
+                        ELSE city
+                    END
+                FROM store
+                WHERE region = #{region}
+                ORDER BY 1
+            """)
     List<String> findSubRegions(String region);
-
     @Select("""
-            
-                 SELECT COUNT(*)
-            FROM store
-            WHERE is_active = 1
-              AND open_at IS NULL;""")
+    SELECT COUNT(*)
+    FROM store
+    WHERE is_active = 1
+      AND open_at IS NOT NULL
+      AND open_at <= NOW()
+      AND (closed_at IS NULL OR closed_at > NOW())
+      AND name NOT LIKE '%테스트%'
+""")
+    Long countOperatingStores();
+    @Select("""
+    SELECT COUNT(*)
+    FROM store
+    WHERE is_active = 1
+      AND (closed_at IS NULL OR closed_at > NOW())
+      AND name NOT LIKE '%테스트%'
+""")
+    Long countTotalStores();
+    @Select("""
+    SELECT COUNT(*)
+    FROM store
+    WHERE is_active = 1
+      AND open_at IS NULL
+      AND (closed_at IS NULL OR closed_at > NOW())
+      AND name NOT LIKE '%테스트%'
+""")
     int countFutureOpenStores();
-
+    @Select("""
+    SELECT COUNT(*)
+    FROM store
+    WHERE is_active = 1
+      AND closed_at IS NOT NULL
+      AND closed_at > NOW()
+      AND name NOT LIKE '%테스트%'
+""")
+    int countClosingScheduledStores();
     List<String> findDistricts(@Param("region") String region,
                                @Param("city") String city);
 
@@ -83,7 +111,9 @@ AND a.role = 'STORE_ADMIN'
     List<Store> selectActiveStore();
 
     Map<String, Object> countStoreSummary();
+
     String findSubRegions();
+
     List<Store> findStoresPaged(
             @Param("region") String region,
             @Param("subRegion") String subRegion,
@@ -98,38 +128,59 @@ AND a.role = 'STORE_ADMIN'
             @Param("subRegion") String subRegion,
             @Param("status") String status
     );
+
     @Select("""
-SELECT *
-FROM store
-WHERE is_active = 1
-  AND open_at IS NOT NULL
-  AND open_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
-  AND open_at < DATE_FORMAT(NOW() + INTERVAL 1 MONTH, '%Y-%m-01')
-  AND open_at <= NOW()
-""")
+            SELECT *
+            FROM store
+            WHERE is_active = 1
+              AND open_at IS NOT NULL
+              AND open_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
+              AND open_at < DATE_FORMAT(NOW() + INTERVAL 1 MONTH, '%Y-%m-01')
+              AND open_at <= NOW()
+            """)
     List<Store> findThisMonthOpen();
+
     @Select("""
-SELECT *
-FROM store
-WHERE is_active = 1
-  AND open_at IS NOT NULL
-  AND open_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
-  AND open_at < DATE_FORMAT(NOW() + INTERVAL 1 MONTH, '%Y-%m-01')
-  AND open_at > NOW()
-""")
+            SELECT *
+            FROM store
+            WHERE is_active = 1
+              AND open_at IS NOT NULL
+              AND open_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
+              AND open_at < DATE_FORMAT(NOW() + INTERVAL 1 MONTH, '%Y-%m-01')
+              AND open_at > NOW()
+            """)
     List<Store> findThisMonthUpcoming();
+
+
     List<RegionSummary> regionSummary();
+
     Long countClosedStores();
+
     int countScheduledCloseStores();
+
     int countMonthlyClosedStores();
+
     List<PendingStoreInfo> findPendingStoreInfo(@Param("limit") Integer limit);
+
     void updateOpenAt(
             @Param("id") Long id,
             @Param("openAt") LocalDateTime openAt
     );
+
+
     void updateClosedAt(
             @Param("id") Long id,
             @Param("closedAt") LocalDateTime closedAt
     );
+    @Select("""
+    SELECT COUNT(*)
+    FROM store
+    WHERE is_active = 1
+      AND (open_at IS NULL OR open_at > NOW())
+      AND (closed_at IS NULL OR closed_at > NOW())
+      AND name NOT LIKE '%테스트%'
+""")
+    int countPendingStores();
+
     MyStoreSummary findMyStoreSummary(@Param("storeId") Long storeId);
 }

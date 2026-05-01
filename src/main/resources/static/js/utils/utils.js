@@ -238,18 +238,27 @@ export function formatDate(str) {
     });
 }
 
-export function navigate(page, el) {
+export function navigate(page, el, options = {}) {
 
-    // 🔥 el 없으면 자동으로 찾아서 처리
     if (!el) {
         el = document.querySelector(`[data-page="${page}"]`);
     }
 
     if (el) setActive(el);
 
+    // 🔥 상태 저장 (페이지 + 옵션)
+    const navState = {
+        page,
+        options
+    };
+
+    window.__NAV_STATE__ = navState;
+    localStorage.setItem("navState", JSON.stringify(navState));
+
+    // 🔥 렌더
     if (page === 'home') renderHome();
     if (page === 'create-store') renderCreateStore();
-    if (page === 'store-list') renderStoreListPage();
+    if (page === 'store-list') renderStoreListPage(options);
     if (page === 'temp') renderTemp();
 }
 export function setActive(el) {

@@ -49,6 +49,11 @@ public class AdminController {
             @RequestParam(defaultValue = "10") int size
     ) {
 
+        // 🔥 status 정리 (선택)
+        if (status != null) {
+            status = status.toUpperCase();
+        }
+
         Map<String, Object> result =
                 storeService.getStoresWithPaging(region, subRegion, status, page, size);
 
@@ -103,6 +108,7 @@ public class AdminController {
         return ResponseEntity.status(HttpStatus.OK).body(updateOpenDateResponse);
 
     }
+
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/admin/kpi/stores")
     public ResponseEntity<StoreKpiResponse>getStoreKpi() {

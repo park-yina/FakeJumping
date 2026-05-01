@@ -387,7 +387,6 @@ public class StoreService {
     private String normalize(String value) {
         return (value == null || value.trim().isEmpty()) ? null : value;
     }
-
     public Map<String, Object> getStoresWithPaging(
             String region,
             String subRegion,
@@ -395,12 +394,25 @@ public class StoreService {
             int page,
             int size
     ) {
+
+        // 1️⃣ normalize
         region = normalize(region);
         subRegion = normalize(subRegion);
         status = normalize(status);
 
+        // 🔥 status 대문자 통일 (중요)
+        if (status != null) {
+            status = status.toUpperCase();
+        }
+
+        // 2️⃣ page / size 안전 처리
+        if (page < 0) page = 0;
+        if (size <= 0) size = 10;
+        if (size > 100) size = 100; // 과도한 조회 방지
+
         int offset = page * size;
 
+        // 3️⃣ 조회
         List<Store> stores = storeMapper.findStoresPaged(
                 region,
                 subRegion,
@@ -415,9 +427,11 @@ public class StoreService {
                 status
         );
 
+        // 4️⃣ 변환
         List<StoreResult> content = stores.stream()
                 .map(store -> {
-                    StoreStatus resolvedStatus = resolveStatus(store); // 🔥 변수명 변경
+
+                    StoreStatus resolvedStatus = resolveStatus(store);
 
                     return new StoreResult(
                             store.getId(),
@@ -437,9 +451,11 @@ public class StoreService {
         result.put("page", page);
         result.put("size", size);
 
+        result.put("hasNext", (page + 1) * size < total);
+        result.put("hasPrev", page > 0);
+
         return result;
     }
-
     public List<String> getSubRegionList(String region) {
         return storeMapper.findSubRegions(region);
     }
@@ -447,19 +463,9 @@ public class StoreService {
     public List<String> getRegionList() {
         return storeMapper.findRegions();
     }
-
-    public List<String> getDistrictList(String region, String city) {
-        return storeMapper.findDistricts(region, city);
-    }
-
     public List<TempResponse> tempAdminList() {
         return adminMapper.selectTempAdminList();
     }
-
-    public int countPendingStores() {
-        return storeMapper.countFutureOpenStores();
-    }
-
     public Map<String, Object> getAdminSummary() {
         return adminMapper.countAdminSummary();
     }
@@ -488,10 +494,28 @@ public class StoreService {
     }
 
     public StoreKpiResponse getStoreKpi(){
-        Long closed=storeMapper.countClosedStores();
-        int scheduled=storeMapper.countScheduledCloseStores();
-        int monthlyClosed=storeMapper.countMonthlyClosedStores();
-        return new StoreKpiResponse(closed,scheduled,monthlyClosed);
+
+        Long total = storeMapper.countTotalStores();
+
+        Long operating = storeMapper.countOperatingStores();
+
+        int scheduled = storeMapper.countScheduledCloseStores(); // 오픈 예정
+
+        int notOpened = storeMapper.countFutureOpenStores(); // 오픈 미정
+
+        Long closed = storeMapper.countClosedStores();
+
+        int monthlyClosed = storeMapper.countMonthlyClosedStores();
+        int closingScheduled=storeMapper.countClosingScheduledStores();
+        return new StoreKpiResponse(
+                total,
+                operating,
+                scheduled,
+                notOpened,
+                closed,
+                closingScheduled,
+                monthlyClosed
+        );
     }
     public Map<String, Object> getStoreSummary() {
         return storeMapper.countStoreSummary();

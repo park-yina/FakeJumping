@@ -132,9 +132,10 @@ function buildModalHtml(storeName, status) {
       </div>
     </div>`;
 }
-export async function renderStoreListPage() {
+export async function renderStoreListPage(options = {}) {
     try {
         const el = document.getElementById("main-content");
+        if (!el) return;
 
         el.innerHTML = `
             <div class="card store-list-card">
@@ -164,8 +165,9 @@ export async function renderStoreListPage() {
                             <option value="">전체 상태</option>
                             <option value="OPERATING">운영중</option>
                             <option value="SCHEDULED">오픈 예정</option>
-                            <option value="CLOSED">폐점</option>
                             <option value="NOT_OPENED">오픈 미정</option>
+                            <option value="CLOSED">폐점</option>
+                            <option value="CLOSING_SCHEDULED">폐점 예정</option>
                         </select>
                         <i class="fa-solid fa-chevron-down custom-select-arrow"></i>
                     </div>
@@ -182,52 +184,61 @@ export async function renderStoreListPage() {
         let currentPage = 0;
         const size = 10;
         let currentStores = [];
+
+        const safeValue = (id) => document.getElementById(id)?.value || "";
+
+        // 🔥 데이터 로딩
         async function load() {
-            const region = document.getElementById("regionFilter").value;
-            const subRegion = document.getElementById("subRegionFilter").value;
-            const status = document.getElementById("statusFilter").value;
+            try {
+                const region = safeValue("regionFilter");
+                const subRegion = safeValue("subRegionFilter");
+                const status = safeValue("statusFilter");
 
-            const data = await fetchStores({
-                region,
-                subRegion,
-                status,
-                page: currentPage,
-                size
-            });
-            currentStores = data.content;
+                const data = await fetchStores({
+                    region,
+                    subRegion,
+                    status,
+                    page: currentPage,
+                    size
+                });
 
-            renderList(data.content);
-            renderPagination(data.total);
+                currentStores = data?.content || [];
+
+                renderList(currentStores);
+                renderPagination(data?.total || 0);
+
+                window.scrollTo(0, 0); // UX 개선
+
+            } catch (e) {
+                console.error("load 실패", e);
+                renderList([]);
+                renderPagination(0);
+            }
         }
-        const listEl = document.getElementById("store-list");
 
-        listEl.addEventListener("click", (e) => {
-            const item = e.target.closest(".store-item");
-            if (!item) return;
-
-            const storeId = item.dataset.id;
-            const store = currentStores.find(s => s.id == storeId);
-
-            openStoreActionModal(store);
-        });
+        // 🔥 상태 badge
         function getStatusBadgeClass(status) {
             switch (status) {
                 case "OPERATING": return "badge-teal";
                 case "SCHEDULED": return "badge-violet";
                 case "CLOSED": return "badge-rose";
                 case "NOT_OPENED": return "badge-amber";
-                default: return "badge-amber";
+                case "CLOSING_SCHEDULED": return "badge-orange";
+                default: return "badge-gray";
             }
         }
 
-        function renderList(stores) {
+        // 🔥 리스트 렌더
+        function renderList(stores = []) {
             const listEl = document.getElementById("store-list");
+            if (!listEl) return;
 
             if (!stores.length) {
                 listEl.innerHTML = `
                     <div class="store-empty">
                         <i class="fa-solid fa-store-slash"></i>
                         <span>해당 조건의 매장이 없습니다</span>
+                        <span class="sub">조건을 변경해보세요</span>
                     </div>
                 `;
                 return;
@@ -238,26 +249,28 @@ export async function renderStoreListPage() {
                     <div class="store-item-left">
                         <div class="store-num">${(currentPage * size) + i + 1}</div>
                         <div>
-                            <div class="store-name">${s.name}</div>
+                            <div class="store-name">${s.name || "-"}</div>
                             <div class="store-location">
                                 <i class="fa-solid fa-location-dot"></i>
-                                ${s.region} ${s.city} ${s.district}
+                                ${s.region || ""} ${s.city || ""} ${s.district || ""}
                             </div>
-                            <div class="store-sub">
-        ${s.address}
-    </div>
+                            <div class="store-sub">${s.address || ""}</div>
                         </div>
                     </div>
                     <div class="store-item-right">
-                        <span class="badge ${getStatusBadgeClass(s.status)}">${s.statusLabel}</span>
+                        <span class="badge ${getStatusBadgeClass(s.status)}">
+                            ${s.statusLabel || s.status}
+                        </span>
                     </div>
                 </div>
             `).join("");
         }
 
-        function renderPagination(total) {
+        // 🔥 페이지네이션
+        function renderPagination(total = 0) {
             const totalPages = Math.ceil(total / size);
             const el = document.getElementById("pagination");
+            if (!el) return;
 
             if (totalPages <= 1) {
                 el.innerHTML = "";
@@ -265,9 +278,7 @@ export async function renderStoreListPage() {
             }
 
             let html = `
-                <button class="page-btn" data-page="${currentPage - 1}" ${currentPage === 0 ? "disabled" : ""}>
-                    ◀
-                </button>
+                <button class="page-btn" data-page="${currentPage - 1}" ${currentPage === 0 ? "disabled" : ""}>◀</button>
             `;
 
             for (let i = 0; i < totalPages; i++) {
@@ -279,48 +290,63 @@ export async function renderStoreListPage() {
             }
 
             html += `
-                <button class="page-btn" data-page="${currentPage + 1}" ${currentPage === totalPages - 1 ? "disabled" : ""}>
-                    ▶
-                </button>
+                <button class="page-btn" data-page="${currentPage + 1}" ${currentPage === totalPages - 1 ? "disabled" : ""}>▶</button>
             `;
 
             el.innerHTML = html;
         }
 
-        // 페이지 이동
-        el.addEventListener("click", async (e) => {
+        // 🔥 이벤트 (중복 방지)
+        el.onclick = async (e) => {
+
+            // 페이지 이동
             const btn = e.target.closest(".page-btn");
             if (btn && !btn.disabled) {
-                currentPage = Number(btn.dataset.page);
+                currentPage = Number(btn.dataset.page) || 0;
                 await load();
+                return;
             }
-        });
 
-        // 🔥 region 변경 → subRegion 갱신
-        document.getElementById("regionFilter").addEventListener("change", async () => {
+            // 매장 클릭
+            const item = e.target.closest(".store-item");
+            if (item) {
+                const storeId = item.dataset.id;
+                const store = currentStores.find(s => s.id == storeId);
+                if (store) openStoreActionModal(store);
+                return;
+            }
+        };
+
+        // 🔥 필터 이벤트
+        document.getElementById("regionFilter")?.addEventListener("change", async () => {
             currentPage = 0;
-            const region = document.getElementById("regionFilter").value;
-
-            await renderSubRegions(region); // 🔥 핵심
+            const region = safeValue("regionFilter");
+            await renderSubRegions(region);
             await load();
         });
 
-        document.getElementById("subRegionFilter").addEventListener("change", async () => {
+        document.getElementById("subRegionFilter")?.addEventListener("change", async () => {
             currentPage = 0;
             await load();
         });
 
-        document.getElementById("statusFilter").addEventListener("change", async () => {
+        document.getElementById("statusFilter")?.addEventListener("change", async () => {
             currentPage = 0;
             await load();
         });
 
+        // 🔥 초기 로딩
         await renderRegions();
-        await renderSubRegions(""); // 초기화
+        await renderSubRegions("");
+
+        const initialStatus = options?.status || "";
+        const statusEl = document.getElementById("statusFilter");
+        if (statusEl) statusEl.value = initialStatus;
+
         await load();
 
     } catch (e) {
-        console.error(e);
+        console.error("renderStoreListPage 전체 실패", e);
     }
 }
 async function renderRegions() {
@@ -466,56 +492,25 @@ export async function renderStoreKpi() {
                     <span class="dot dot-gray"></span>
                     폐점 현황
                 </div>
-                <button class="refresh-btn" title="새로고침">
-                    <i class="fa-solid fa-arrows-rotate"></i>
-                </button>
             </div>
 
             <div class="stat-value">${data.closed}</div>
             <div class="stat-label">전체 폐점</div>
 
             <div class="store-meta">
-                <span class="kpi-item">
-                    이달 폐점 ${data.monthlyClosed}
-                    <i class="fa-solid fa-circle-question tooltip-icon"
-                       title="이번 달에 실제로 폐점 완료된 매장 수"></i>
-                </span>
-
-                &nbsp;·&nbsp;
-
-                <span class="kpi-item">
-                    폐점 예정 ${data.scheduled}
-                    <i class="fa-solid fa-circle-question tooltip-icon"
-                       title="현재 기준 운영 중이며 향후 폐점 예정인 매장 수"></i>
-                </span>
+                이달 폐점 ${data.monthlyClosed}
             </div>
 
-            <div class="store-hint">
-                <i class="fa-solid fa-arrow-pointer"></i>
-                클릭하면 폐점 매장 목록으로 이동
-            </div>
+            <div class="store-hint">클릭하면 폐점 매장</div>
         </div>
         `;
 
-        el.querySelector(".store-card").addEventListener("click", (e) => {
-            navigate("closed-store", e.currentTarget);
-        });
-
-        el.querySelector(".refresh-btn").addEventListener("click", (e) => {
-            e.stopPropagation();
-            renderStoreKpi();
+        el.querySelector(".store-card").addEventListener("click", () => {
+            navigate("store-list", null, { status: "CLOSED" });
         });
 
     } catch (e) {
         console.error(e);
-        document.getElementById("store-kpi").innerHTML = `
-            <div class="card">
-                <div class="error-card">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    폐점 데이터 불러오기 실패
-                </div>
-            </div>
-        `;
     }
 }
 export async function renderPendingStoreSummary() {
@@ -524,55 +519,38 @@ export async function renderPendingStoreSummary() {
         const el = document.getElementById("pendingStore-summary");
 
         el.innerHTML = `
-        <div class="card pending-card" style="cursor:pointer">
+        <div class="card pending-card">
             <div class="card-header">
                 <div class="card-title">
                     <span class="dot dot-rose"></span>
                     오픈 미정 매장
                 </div>
-                <button class="refresh-btn" title="새로고침">
-                    <i class="fa-solid fa-arrows-rotate"></i>
-                </button>
             </div>
 
             <div class="stat-value">${data.count}</div>
-            <div class="stat-label">오픈일 미정</div>
 
             <div class="badge-container">
-                ${data.pendingStores.length === 0
-            ? `<span class="text-muted">모든 매장이 오픈일이 설정되었습니다</span>`
-            : data.pendingStores.map(d => `
-                        <span class="badge badge-rose">
-                            ${d.name} (${d.region})
-                        </span>
-                    `).join("")
+                ${
+            data.stores.length === 0
+                ? `<span>모든 매장이 오픈일 설정됨</span>`
+                : data.stores.map(d => `
+                            <span class="badge badge-rose">
+                                ${d.name}
+                            </span>
+                        `).join("")
         }
             </div>
         </div>
         `;
 
-        el.querySelector(".pending-card").addEventListener("click", (e) => {
-            navigate("pending-store", e.currentTarget);
-        });
-
-        el.querySelector(".refresh-btn").addEventListener("click", (e) => {
-            e.stopPropagation();
-            renderPendingStoreSummary();
+        el.querySelector(".pending-card").addEventListener("click", () => {
+            navigate("store-list", null, { status: "NOT_OPENED" });
         });
 
     } catch (e) {
         console.error(e);
-        document.getElementById("pendingStore-summary").innerHTML = `
-            <div class="card">
-                <div class="error-card">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    오픈 미정 데이터 불러오기 실패
-                </div>
-            </div>
-        `;
     }
 }
-
 export async function renderRegionSummary() {
     try {
         const data = await fetchRegionSummary();
@@ -622,83 +600,97 @@ export async function renderRegionSummary() {
         `;
     }
 }
-export async function renderMonthlySummary() {
+export async function renderStatusPanel() {
     try {
-        const data = await fetchMonthlySummary();
-        const el = document.getElementById("monthly-summary");
-        const openedNames = (data.opened || []).map(s => s.name);
-        const upcomingNames = (data.upcoming || []).map(s => s.name);
-
-        const openedPreview = openedNames.slice(0, 3).join(" / ");
-        const upcomingPreview = upcomingNames.slice(0, 3).join(" / ");
-
-        const openedMore = openedNames.length - 3;
-        const upcomingMore = upcomingNames.length - 3;
+        const data = await fetchStoreKpi();
+        const el = document.getElementById("status-panel");
 
         el.innerHTML = `
-        <div class="card monthly-card">
+        <div class="status-panel">
 
-            <div class="card-header">
-                <div class="card-title">
-                    <span class="dot dot-teal"></span>
-                    이달 매장 현황
-                </div>
-                <button class="refresh-btn" title="새로고침">
-                    <i class="fa-solid fa-arrows-rotate"></i>
-                </button>
+            <div class="status-item">
+                <i class="fa-solid fa-circle-check text-green"></i>
+                <span>운영 중</span>
+                <strong>${data.operating}</strong>
             </div>
 
-            <div class="monthly-grid">
-
-                <!-- 이달 오픈 -->
-                <div class="monthly-box">
-                    <div class="label">이달 오픈</div>
-                    <div class="value text-teal">${data.openedCount}</div>
-                    <div class="tags">
-                        ${openedNames.length === 0
-            ? `<span class="text-muted">없음</span>`
-            : `
-                                ${openedPreview}
-                                ${openedMore > 0 ? `<span class="more">+${openedMore}</span>` : ""}
-                              `
-        }
-                    </div>
-                </div>
-
-                <!-- 오픈 예정 -->
-                <div class="monthly-box">
-                    <div class="label">오픈 예정</div>
-                    <div class="value text-violet">${data.upcomingCount}</div>
-                    <div class="tags">
-                        ${upcomingNames.length === 0
-            ? `<span class="text-muted">없음</span>`
-            : `
-                                ${upcomingPreview}
-                                ${upcomingMore > 0 ? `<span class="more">+${upcomingMore}</span>` : ""}
-                              `
-        }
-                    </div>
-                </div>
-
+            <div class="status-item">
+                <i class="fa-regular fa-clock text-blue"></i>
+                <span>오픈 예정</span>
+                <strong>${data.scheduled}</strong>
             </div>
+
+            <div class="status-item warning">
+                <i class="fa-solid fa-triangle-exclamation text-orange"></i>
+                <span>오픈 미정</span>
+                <strong>${data.notOpened}</strong>
+            </div>
+
+            <div class="status-item">
+                <i class="fa-solid fa-circle-xmark text-gray"></i>
+                <span>폐점</span>
+                <strong>${data.closed}</strong>
+            </div>
+
         </div>
         `;
 
-        // 새로고침 버튼
-        el.querySelector(".refresh-btn").addEventListener("click", (e) => {
-            e.stopPropagation();
-            renderMonthlySummary();
-        });
+    } catch (e) {
+        console.error(e);
+    }
+}
+export async function renderMonthlySummary() {
+    try {
+        const data = await fetchMonthlySummary();   // 오픈
+        const kpi = await fetchStoreKpi();          // 폐점
+        const el = document.getElementById("monthly-summary");
+
+        el.innerHTML = `
+<div class="card monthly-card-compact">
+
+    <div class="card-header">
+        <div class="card-title">
+            <span class="dot dot-teal"></span>
+            이달 매장 현황
+        </div>
+    </div>
+
+    <div class="monthly-table">
+
+        <div class="monthly-row">
+            <div class="monthly-label">오픈</div>
+            <div class="monthly-value">
+                ${data.opened.length ? data.opened.map(s => s.name).join(", ") : "없음"}
+            </div>
+        </div>
+
+        <div class="monthly-row">
+            <div class="monthly-label">오픈 예정</div>
+            <div class="monthly-value">
+                ${data.upcoming.length ? data.upcoming.map(s => s.name).join(", ") : "없음"}
+            </div>
+        </div>
+
+        <div class="monthly-row closing">
+            <div class="monthly-label">폐점 예정</div>
+            <div class="monthly-value">
+                ${kpi.closingScheduled || 0}
+            </div>
+        </div>
+
+        <div class="monthly-row">
+            <div class="monthly-label">폐점 완료</div>
+            <div class="monthly-value">
+                ${kpi.monthlyClosed || 0}
+            </div>
+        </div>
+
+    </div>
+
+</div>
+`;
 
     } catch (e) {
         console.error(e);
-        document.getElementById("monthly-summary").innerHTML = `
-            <div class="card">
-                <div class="error-card">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    이달 매장 데이터 불러오기 실패
-                </div>
-            </div>
-        `;
     }
 }
