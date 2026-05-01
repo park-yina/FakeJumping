@@ -5,7 +5,6 @@
 <mapper namespace="com.parkvina.fakejumping.mapper.AdminMapper">
 
 
-
     <insert id="insertAdmin"
             parameterType="com.parkvina.fakejumping.entity.Admin"
             useGeneratedKeys="true"
@@ -17,7 +16,8 @@
         role,
         store_id,
         is_active,
-        must_change_password
+        must_change_password,
+        status
         )
         VALUES (
         #{username},
@@ -25,7 +25,8 @@
         #{role},
         #{storeId},
         #{isActive},
-        #{mustChangePassword}
+        #{mustChangePassword},
+        #{status}
         )
 
     </insert>

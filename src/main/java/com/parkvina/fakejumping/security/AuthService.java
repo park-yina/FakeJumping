@@ -2,11 +2,14 @@ package com.parkvina.fakejumping.security;
 
 import com.parkvina.fakejumping.controller.CustomException;
 import com.parkvina.fakejumping.dto.*;
+import com.parkvina.fakejumping.dto.login.LoginRequest;
+import com.parkvina.fakejumping.dto.login.LoginResponse;
 import com.parkvina.fakejumping.dto.store.StoreSummary;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.AdminRefreshToken;
 import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.enums.AdminRole;
+import com.parkvina.fakejumping.enums.AdminStatus;
 import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.StoreMapper;
 import com.parkvina.fakejumping.mapper.TokenMapper;
@@ -73,6 +76,10 @@ public class AuthService {
         if (admin.getPassword() == null) {
             throw new RuntimeException("DB에 비밀번호가 없음");
         }
+        if (admin.getAdminStatus()== AdminStatus.INACTIVE) {
+            throw new CustomException("비활성화된 계정입니다.", HttpStatus.FORBIDDEN);
+        }
+
 
         boolean match = passwordEncoder.matches(request.getPassword(), admin.getPassword());
 

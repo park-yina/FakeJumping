@@ -1,4 +1,4 @@
-package com.parkvina.fakejumping.dto;
+package com.parkvina.fakejumping.dto.login;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

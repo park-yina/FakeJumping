@@ -1,6 +1,6 @@
 import { createStoreApi } from "./apis/store-api.js";
 import { renderHome, renderTempSummary } from "./uis/common-uis.js";
-import {renderStoreSummary,renderRegionSummary} from "./uis/store-uis.js";
+import {renderRegionSummary} from "./uis/store-uis.js";
 import {navigate, sortByDateAsc, sortByDateDesc, sortByStore} from "./utils/utils.js";
 
 
@@ -70,11 +70,19 @@ async function checkLogin() {
 
 async function init() {
     const isValid = await checkLogin();
-
-    if (!isValid) return; // 🔥 여기 추가
+    if (!isValid) return;
 
     applyRole();
-    await renderHome();
+
+    // 🔥 저장된 페이지 상태 복원
+    const saved = localStorage.getItem("navState");
+    const state = saved ? JSON.parse(saved) : null;
+
+    if (state?.page) {
+        navigate(state.page, null, state.options);
+    } else {
+        await renderHome();
+    }
 }
 init();
 

@@ -1,4 +1,4 @@
-package com.parkvina.fakejumping.dto;
+package com.parkvina.fakejumping.dto.login;
 
 import com.parkvina.fakejumping.dto.store.StoreSummary;
 import com.parkvina.fakejumping.enums.AdminRole;

@@ -2,10 +2,13 @@ package com.parkvina.fakejumping.service;
 
 import com.parkvina.fakejumping.controller.CustomException;
 import com.parkvina.fakejumping.dto.*;
+import com.parkvina.fakejumping.dto.login.ResetPasswordRequest;
+import com.parkvina.fakejumping.dto.login.ResetPasswordResult;
 import com.parkvina.fakejumping.dto.store.*;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.enums.AdminRole;
+import com.parkvina.fakejumping.enums.AdminStatus;
 import com.parkvina.fakejumping.enums.StoreStatus;
 import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.StoreMapper;
@@ -32,29 +35,28 @@ public class StoreService {
     private final PasswordEncoder passwordEncoder;
     private final DiscordService discordService;
     private final AuthService authService;
+
     public StoreStatus resolveStatus(Store store) {
         LocalDateTime now = LocalDateTime.now();
-
-        // 폐점
         if (store.getClosedAt() != null) {
-            return StoreStatus.CLOSED;
+            if (!store.getClosedAt().isAfter(now)) {
+                return StoreStatus.CLOSED;
+            }
         }
 
-        // 오픈 예정
         if (store.getIsActive()
                 && store.getOpenAt() != null
                 && store.getOpenAt().isAfter(now)) {
             return StoreStatus.SCHEDULED;
         }
 
-        // 운영중
+        // 운영중 (폐점 예정 포함)
         if (store.getIsActive()
                 && store.getOpenAt() != null
                 && !store.getOpenAt().isAfter(now)) {
             return StoreStatus.OPERATING;
         }
 
-        // 오픈 미정
         if (store.getIsActive()
                 && store.getOpenAt() == null) {
             return StoreStatus.NOT_OPENED;
@@ -84,6 +86,147 @@ public class StoreService {
         return storeName + "_" + UUID.randomUUID().toString().substring(0, 4);
 
     }
+
+    @Transactional
+    public UpdateCloseDateResponse updateCloseDate(
+            Long storeId,
+            LocalDateTime closedAt
+    ) {
+        Store store = storeMapper.findById(storeId);
+
+        if (store == null) {
+            throw new CustomException("STORE_NOT_FOUND", "매장을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+        }
+
+        if (closedAt == null) {
+            throw new CustomException(
+                    "CLOSED_DATE_REQUIRED",
+                    "폐점일은 필수입니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (store.getClosedAt() == null) {
+            throw new CustomException(
+                    "NOT_CLOSED_STORE",
+                    "폐점된 매장이 아닙니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (store.getOpenAt() != null && closedAt.isBefore(store.getOpenAt())) {
+            throw new CustomException(
+                    "INVALID_CLOSE_DATE",
+                    "폐점일은 오픈일보다 이전일 수 없습니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        storeMapper.updateClosedAt(storeId, closedAt);
+        store.setClosedAt(closedAt);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        LocalDateTime closeEndOfDay = closedAt.toLocalDate().atTime(23, 59, 59);
+
+        if (!closeEndOfDay.isAfter(now)) {
+            adminMapper.deactivateStoreAdmins(storeId);
+        }
+
+        return new UpdateCloseDateResponse(
+                storeId,
+                closedAt,
+                resolveStatus(store)
+        );
+    }
+
+    @Transactional
+    public UpdateCloseDateResponse reopenStore(Long storeId) {
+
+        Store store = storeMapper.findById(storeId);
+
+        if (store == null) {
+            throw new CustomException(
+                    "STORE_NOT_FOUND",
+                    "매장을 찾을 수 없습니다.",
+                    HttpStatus.NOT_FOUND
+            );
+
+        }
+
+        if (store.getClosedAt() == null) {
+            throw new CustomException(
+                    "NOT_CLOSED_STORE",
+                    "폐점된 매장이 아닙니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        storeMapper.updateClosedAt(storeId, null);
+
+        adminMapper.activateStoreAdmins(storeId);
+
+        store.setClosedAt(null);
+
+        return new UpdateCloseDateResponse(
+                storeId,
+                null,
+                resolveStatus(store)
+        );
+    }
+
+    @Transactional
+    public UpdateCloseDateResponse closeStore(
+            Long storeId,
+            LocalDateTime closedAt,
+            boolean force
+    ) {
+        Store store = storeMapper.findById(storeId);
+
+        if (store == null) {
+            throw new CustomException("매장을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+        }
+
+        if (closedAt == null) {
+            throw new CustomException("폐점일은 필수입니다.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (!force) {
+            if (store.getClosedAt() != null) {
+                throw new CustomException(
+                        "ALREADY_CLOSED",
+                        "이미 폐점된 매장입니다.",
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+
+            if (store.getOpenAt() == null) {
+                throw new CustomException(
+                        "NOT_OPENED_CANNOT_CLOSE",
+                        "오픈되지 않은 매장은 폐점할 수 없습니다.",
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+            if (closedAt.isBefore(store.getOpenAt())) {
+                throw new CustomException("폐점일은 오픈일보다 이전일 수 없습니다.", HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        storeMapper.updateClosedAt(storeId, closedAt);
+        if (!closedAt.isAfter(LocalDateTime.now())) {
+            adminMapper.deactivateStoreAdmins(storeId);
+        }
+
+        store.setClosedAt(closedAt);
+
+        return new UpdateCloseDateResponse(
+                storeId,
+                closedAt,
+                resolveStatus(store)
+        );
+    }
+
+    @Transactional
     public UpdateOpenDateResponse updateStoreOpenDate(
             Long storeId,
             LocalDateTime openAt,
@@ -103,10 +246,11 @@ public class StoreService {
             );
         }
 
-        LocalDate today = LocalDate.now();
-        LocalDate openDate = openAt.toLocalDate();
+        LocalDateTime now = LocalDateTime.now();
 
-        if (openDate.isBefore(today) && !force) {
+        LocalDateTime openStartOfDay = openAt.toLocalDate().atStartOfDay();
+
+        if (openStartOfDay.isBefore(now) && !force) {
             throw new CustomException(
                     "OPEN_DATE_PAST",
                     "과거 날짜 변경은 제한됩니다.",
@@ -116,7 +260,10 @@ public class StoreService {
 
         StoreStatus status = resolveStatus(store);
 
-        if (!force && status == StoreStatus.OPERATING && openDate.isAfter(today)) {
+        if (!force
+                && status == StoreStatus.OPERATING
+                && openStartOfDay.isAfter(now)) {
+
             throw new CustomException(
                     "OPERATING_TO_FUTURE",
                     "운영 중 매장의 오픈일을 미래로 변경할 수 없습니다.",
@@ -124,16 +271,16 @@ public class StoreService {
             );
         }
 
-        storeMapper.updateOpenAt(storeId, openAt);
-
-        store.setOpenAt(openAt);
+        storeMapper.updateOpenAt(storeId, openStartOfDay);
+        store.setOpenAt(openStartOfDay);
 
         return new UpdateOpenDateResponse(
                 storeId,
-                openAt,
+                openStartOfDay,
                 resolveStatus(store)
         );
     }
+
     @Transactional
     public ResetPasswordResult resetPassword(ResetPasswordRequest request) {
         Admin admin = adminMapper.findByUsername(request.getUsername());
@@ -217,6 +364,7 @@ public class StoreService {
         admin.setStoreId(storeId);
         admin.setIsActive(true);
         admin.setMustChangePassword(true);
+        admin.setAdminStatus(AdminStatus.ACTIVE);
 
         adminMapper.insertAdmin(admin);
 
@@ -239,7 +387,6 @@ public class StoreService {
     private String normalize(String value) {
         return (value == null || value.trim().isEmpty()) ? null : value;
     }
-
     public Map<String, Object> getStoresWithPaging(
             String region,
             String subRegion,
@@ -247,12 +394,25 @@ public class StoreService {
             int page,
             int size
     ) {
+
+        // 1️⃣ normalize
         region = normalize(region);
         subRegion = normalize(subRegion);
         status = normalize(status);
 
+        // 🔥 status 대문자 통일 (중요)
+        if (status != null) {
+            status = status.toUpperCase();
+        }
+
+        // 2️⃣ page / size 안전 처리
+        if (page < 0) page = 0;
+        if (size <= 0) size = 10;
+        if (size > 100) size = 100; // 과도한 조회 방지
+
         int offset = page * size;
 
+        // 3️⃣ 조회
         List<Store> stores = storeMapper.findStoresPaged(
                 region,
                 subRegion,
@@ -267,9 +427,11 @@ public class StoreService {
                 status
         );
 
+        // 4️⃣ 변환
         List<StoreResult> content = stores.stream()
                 .map(store -> {
-                    StoreStatus resolvedStatus = resolveStatus(store); // 🔥 변수명 변경
+
+                    StoreStatus resolvedStatus = resolveStatus(store);
 
                     return new StoreResult(
                             store.getId(),
@@ -289,9 +451,11 @@ public class StoreService {
         result.put("page", page);
         result.put("size", size);
 
+        result.put("hasNext", (page + 1) * size < total);
+        result.put("hasPrev", page > 0);
+
         return result;
     }
-
     public List<String> getSubRegionList(String region) {
         return storeMapper.findSubRegions(region);
     }
@@ -299,19 +463,9 @@ public class StoreService {
     public List<String> getRegionList() {
         return storeMapper.findRegions();
     }
-
-    public List<String> getDistrictList(String region, String city) {
-        return storeMapper.findDistricts(region, city);
-    }
-
     public List<TempResponse> tempAdminList() {
         return adminMapper.selectTempAdminList();
     }
-
-    public int countPendingStores() {
-        return storeMapper.countFutureOpenStores();
-    }
-
     public Map<String, Object> getAdminSummary() {
         return adminMapper.countAdminSummary();
     }
@@ -339,7 +493,30 @@ public class StoreService {
         );
     }
 
+    public StoreKpiResponse getStoreKpi(){
 
+        Long total = storeMapper.countTotalStores();
+
+        Long operating = storeMapper.countOperatingStores();
+
+        int scheduled = storeMapper.countScheduledCloseStores(); // 오픈 예정
+
+        int notOpened = storeMapper.countFutureOpenStores(); // 오픈 미정
+
+        Long closed = storeMapper.countClosedStores();
+
+        int monthlyClosed = storeMapper.countMonthlyClosedStores();
+        int closingScheduled=storeMapper.countClosingScheduledStores();
+        return new StoreKpiResponse(
+                total,
+                operating,
+                scheduled,
+                notOpened,
+                closed,
+                closingScheduled,
+                monthlyClosed
+        );
+    }
     public Map<String, Object> getStoreSummary() {
         return storeMapper.countStoreSummary();
     }

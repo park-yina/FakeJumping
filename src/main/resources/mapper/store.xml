@@ -9,8 +9,8 @@
             useGeneratedKeys="true"
             keyProperty="id">
 
-        INSERT INTO store (name, region, city,district,address,is_active)
-        VALUES (#{name}, #{region}, #{city},#{district},#{address},#{isActive})
+        INSERT INTO store (name, region, city, district, address, is_active)
+        VALUES (#{name}, #{region}, #{city}, #{district}, #{address}, #{isActive})
 
     </insert>
     <select id="findStoresPaged" resultType="com.parkvina.fakejumping.entity.Store">
@@ -18,6 +18,7 @@
         FROM store
         WHERE 1=1
 
+        <!-- 지역 -->
         <if test="region != null and region != ''">
             AND region = #{region}
         </if>
@@ -29,34 +30,74 @@
             )
         </if>
 
+        <!-- 상태 -->
         <if test="status != null and status != ''">
 
+            <!-- 운영중 -->
             <if test='"OPERATING".equals(status)'>
                 AND is_active = 1
-                AND closed_at IS NULL
                 AND open_at IS NOT NULL
                 AND open_at <![CDATA[ <= ]]> NOW()
+                AND (closed_at IS NULL OR closed_at <![CDATA[ > ]]> NOW())
             </if>
-
-            <if test='"SCHEDULED".equals(status)'>
+            <!-- 오픈 예정 -->
+            <if test='"OPEN_SCHEDULED".equals(status)'>
                 AND is_active = 1
-                AND closed_at IS NULL
-                AND open_at > NOW()
+                AND open_at <![CDATA[ > ]]> NOW()
+                AND (closed_at IS NULL OR closed_at <![CDATA[ > ]]> NOW())
             </if>
 
+            <!-- 오픈 미정 -->
             <if test='"NOT_OPENED".equals(status)'>
                 AND is_active = 1
-                AND closed_at IS NULL
                 AND open_at IS NULL
+                AND (closed_at IS NULL OR closed_at <![CDATA[ > ]]> NOW())
             </if>
 
+            <!-- 폐점 완료 -->
             <if test='"CLOSED".equals(status)'>
                 AND closed_at IS NOT NULL
+                AND open_at IS NOT NULL
+                AND closed_at <![CDATA[ <= ]]> NOW()
+            </if>
+
+            <!-- 폐점 예정 -->
+            <if test='"CLOSE_SCHEDULED".equals(status)'>
+                AND closed_at IS NOT NULL
+                AND open_at IS NOT NULL
+                AND closed_at <![CDATA[ > ]]> NOW()
+            </if>
+
+            <!-- 이달 폐점 -->
+            <if test='"MONTHLY_CLOSED".equals(status)'>
+                AND <![CDATA[
+                closed_at IS NOT NULL
+                AND open_at IS NOT NULL
+                AND DATE(closed_at) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+                AND DATE(closed_at) < DATE_ADD(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH)
+                AND closed_at <= NOW()
+            ]]>
             </if>
 
         </if>
 
-        ORDER BY id DESC
+        <!-- 정렬 -->
+        ORDER BY
+        <choose>
+            <when test='"OPEN_SCHEDULED".equals(status)'>
+                open_at ASC
+            </when>
+            <when test='"CLOSE_SCHEDULED".equals(status)'>
+                closed_at ASC
+            </when>
+            <when test='"CLOSED".equals(status) or "MONTHLY_CLOSED".equals(status)'>
+                closed_at DESC
+            </when>
+            <otherwise>
+                id DESC
+            </otherwise>
+        </choose>
+
         LIMIT #{size} OFFSET #{offset}
     </select>
     <select id="countStores" resultType="int">
@@ -64,6 +105,7 @@
         FROM store
         WHERE 1=1
 
+        <!-- 지역 -->
         <if test="region != null and region != ''">
             AND region = #{region}
         </if>
@@ -71,12 +113,14 @@
         <if test="subRegion != null and subRegion != ''">
             AND (
             city = #{subRegion}
-            OR (city IS NULL AND district = #{subRegion})
+            OR ((city IS NULL OR city = '') AND district = #{subRegion})
             )
         </if>
 
+        <!-- 상태 -->
         <if test="status != null and status != ''">
 
+            <!-- 운영중 -->
             <if test='"OPERATING".equals(status)'>
                 AND is_active = 1
                 AND closed_at IS NULL
@@ -84,69 +128,118 @@
                 AND open_at <![CDATA[ <= ]]> NOW()
             </if>
 
-            <if test='"SCHEDULED".equals(status)'>
+            <!-- 오픈 예정 -->
+            <if test='"OPEN_SCHEDULED".equals(status)'>
                 AND is_active = 1
                 AND closed_at IS NULL
-                AND open_at > NOW()
+                AND open_at <![CDATA[ > ]]> NOW()
             </if>
 
+            <!-- 오픈 미정 -->
             <if test='"NOT_OPENED".equals(status)'>
                 AND is_active = 1
                 AND closed_at IS NULL
                 AND open_at IS NULL
             </if>
 
+            <!-- 폐점 완료 -->
             <if test='"CLOSED".equals(status)'>
                 AND closed_at IS NOT NULL
+                AND open_at IS NOT NULL
+                AND closed_at <![CDATA[ <= ]]> NOW()
+            </if>
+
+            <!-- 폐점 예정 -->
+            <if test='"CLOSE_SCHEDULED".equals(status)'>
+                AND closed_at IS NOT NULL
+                AND open_at IS NOT NULL
+                AND closed_at <![CDATA[ > ]]> NOW()
+            </if>
+
+            <!-- 이달 폐점 -->
+            <if test='"MONTHLY_CLOSED".equals(status)'>
+                AND <![CDATA[
+                closed_at IS NOT NULL
+                AND open_at IS NOT NULL
+                AND DATE(closed_at) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+                AND DATE(closed_at) < DATE_ADD(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH)
+                AND closed_at <= NOW()
+            ]]>
             </if>
 
         </if>
     </select>
     <select id="countStoreSummary" resultType="map">
-        SELECT
-        COUNT(*) AS total,
+        SELECT COUNT(*) AS total,
 
-        -- 운영중
-        SUM(CASE
-        WHEN is_active = 1
-        AND closed_at IS NULL
-        AND open_at IS NOT NULL
-        AND open_at <![CDATA[ <= ]]> NOW()        THEN 1 ELSE 0
-        END) AS operating,
+               SUM(CASE
+                       WHEN is_active = 1
+                           AND open_at IS NOT NULL
+                           AND open_at <![CDATA[ <= ]]> NOW()
+                           AND (closed_at IS NULL OR closed_at <![CDATA[ > ]]> NOW())
+                           THEN 1 ELSE 0 END) AS operating,
 
-        -- 오픈 예정
-        SUM(CASE
-        WHEN is_active = 1
-        AND closed_at IS NULL
-        AND open_at > NOW()
-        THEN 1 ELSE 0
-        END) AS scheduled,
+               SUM(CASE
+                       WHEN is_active = 1
+                           AND open_at <![CDATA[ > ]]> NOW()
+                           AND (closed_at IS NULL OR closed_at <![CDATA[ > ]]> NOW())
+                           THEN 1 ELSE 0 END) AS scheduled,
 
-        -- 폐점
-        SUM(CASE
-        WHEN closed_at IS NOT NULL
-        THEN 1 ELSE 0
-        END) AS closed,
+               SUM(CASE
+                       WHEN closed_at IS NOT NULL
+                           AND closed_at <![CDATA[ <= ]]> NOW()
+                           THEN 1 ELSE 0 END) AS closed,
 
-        -- 오픈 미정
-        SUM(CASE
-        WHEN is_active = 1
-        AND closed_at IS NULL
-        AND open_at IS NULL
-        THEN 1 ELSE 0
-        END) AS inactive
+               SUM(CASE
+                       WHEN is_active = 1
+                           AND open_at IS NULL
+                           AND (closed_at IS NULL OR closed_at <![CDATA[ > ]]> NOW())
+                           THEN 1 ELSE 0 END) AS inactive
 
         FROM store
     </select>
+    <select id="countClosedStores" resultType="long">
+        SELECT COUNT(*)
+        FROM store
+        WHERE closed_at IS NOT NULL
+          AND open_at IS NOT NULL
+          AND <![CDATA[
+        closed_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+        ]]>
+    </select>
+    <select id="countMonthlyClosedStores" resultType="int">
+        SELECT COUNT(*)
+        FROM store
+        WHERE closed_at IS NOT NULL
+          AND open_at IS NOT NULL
+          AND <![CDATA[
+        DATE(closed_at) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+          AND DATE(closed_at) < DATE_ADD(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH)
+          AND closed_at <= NOW()
+        ]]>
+    </select>
+    <select id="countScheduledCloseStores" resultType="int">
+        SELECT COUNT(*)
+        FROM store
+        WHERE closed_at IS NOT NULL
+          AND open_at IS NOT NULL
+          AND <![CDATA[
+        closed_at > NOW()
+        ]]>
+    </select>
+    <update id="updateClosedAt">
+        UPDATE store
+        SET closed_at=#{closedAt}
+        WHERE id = #{id}
+    </update>
     <update id="updateOpenAt">
         UPDATE store
         SET open_at=#{openAt}
-        WHERE id=#{id}
+        WHERE id = #{id}
     </update>
     <select id="findMyStoreSummary" resultType="com.parkvina.fakejumping.dto.store.MyStoreSummary">
-        SELECT
-            open_at AS openAt,
-            created_at AS createdAt
+        SELECT open_at    AS openAt,
+               created_at AS createdAt
         FROM store
         WHERE id = #{storeId}
     </select>
@@ -173,8 +266,13 @@
         ORDER BY count DESC
     </select>
     <select id="findPendingStoreInfo" resultType="com.parkvina.fakejumping.dto.store.PendingStoreInfo">
-SELECT id,created_at AS createdAt,region,name from store where is_active=1 AND open_at IS NULL ORDER BY created_at DESC
-<if test="limit!=null">LIMIT #{limit}</if>
-
+        SELECT id, created_at AS createdAt, region, name
+        FROM store
+        WHERE is_active = 1
+        AND open_at IS NULL
+        AND (closed_at IS NULL OR closed_at <![CDATA[ > ]]> NOW())
+        AND name NOT LIKE '%테스트%'
+        ORDER BY created_at DESC
+        <if test="limit != null">LIMIT #{limit}</if>
     </select>
 </mapper>

@@ -37,7 +37,11 @@ export async function fetchRegionSummary() {
 
     return res.json();
 }
-
+export async function fetchStoreKpi(){
+    const res= await fetchWithAuth("/api/admin/kpi/stores");
+    if (!res.ok) throw res;
+    return res.json();
+}
 export async function fetchPendingStoreSummary() {
     const res = await fetchWithAuth("/api/stores/pending-summary");
 
@@ -86,6 +90,59 @@ export async function fetchStores({
 
     return res.json();
 }
+export async function closeStore(storeId, closedAt, force = false) {
+    try {
+        const res = await fetchWithAuth(`/api/stores/${storeId}/close`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                closedAt,
+                force
+            })
+        });
+
+        if (!res.ok) {
+            let err;
+            try {
+                err = await res.json();
+            } catch {
+                err = { message: "서버 오류" };
+            }
+            throw err;
+        }
+
+        const data = await res.json();
+
+        return data;
+
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+}
+export async function updateCloseDate(storeId, closedAt, force = false) {
+    const res = await fetchWithAuth(`/api/stores/${storeId}/closed-date`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            closedAt,
+            force
+        })
+    });
+
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({
+            message: "서버 오류"
+        }));
+        throw err;
+    }
+
+    return res.json();
+}
 export async function updateStoreOpenDate(storeId, openAt, force = false) {
     try {
         const res = await fetchWithAuth(`/api/stores/${storeId}/open-date`, {
@@ -104,7 +161,7 @@ export async function updateStoreOpenDate(storeId, openAt, force = false) {
             try {
                 err = await res.json();
             } catch {
-                err = { message: "서버 오류" };
+                err = {message: "서버 오류"};
             }
             throw err;
         }
@@ -131,4 +188,12 @@ export async function updateStoreOpenDate(storeId, openAt, force = false) {
 
         throw e;
     }
+}
+export async function reopenStore(storeId) {
+    const res = await fetchWithAuth(`/api/stores/${storeId}/reopen`, {
+        method: "PUT"
+    });
+    if (!res.ok) throw res;
+
+    return res.json();
 }

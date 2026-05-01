@@ -2,6 +2,7 @@ package com.parkvina.fakejumping.security;
 
 
 import com.parkvina.fakejumping.enums.AdminRole;
+import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.service.JwtUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,7 @@ public class SecurityConfig {
                     "/actuator/**"
             };
     private final JwtUtils jwtUtils;
+    private final AdminMapper adminMapper;
     private final LogoutHandlerImpl logoutHandler;
     private String[] anyRoles = Arrays.stream(AdminRole.values())
             .map(Enum::name)
@@ -47,7 +49,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtUtils);
+        return new JwtAuthenticationFilter(jwtUtils,adminMapper);
     }
 
     @Bean

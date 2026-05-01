@@ -1,13 +1,13 @@
 package com.parkvina.fakejumping.controller;
 
 import com.parkvina.fakejumping.dto.*;
-import com.parkvina.fakejumping.dto.store.OpenDateRequest;
-import com.parkvina.fakejumping.dto.store.PendingStoreSummary;
-import com.parkvina.fakejumping.dto.store.StoreResult;
-import com.parkvina.fakejumping.dto.store.UpdateOpenDateResponse;
+import com.parkvina.fakejumping.dto.login.ResetPasswordRequest;
+import com.parkvina.fakejumping.dto.login.ResetPasswordResult;
+import com.parkvina.fakejumping.dto.store.*;
 import com.parkvina.fakejumping.service.StoreService;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.Response;
+import org.apache.ibatis.annotations.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,6 +48,11 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
+
+        // 🔥 status 정리 (선택)
+        if (status != null) {
+            status = status.toUpperCase();
+        }
 
         Map<String, Object> result =
                 storeService.getStoresWithPaging(region, subRegion, status, page, size);
@@ -102,6 +107,43 @@ public class AdminController {
         UpdateOpenDateResponse updateOpenDateResponse=storeService.updateStoreOpenDate(storeId,req.getOpenAt(),req.getForce());
         return ResponseEntity.status(HttpStatus.OK).body(updateOpenDateResponse);
 
+    }
+
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @GetMapping("/admin/kpi/stores")
+    public ResponseEntity<StoreKpiResponse>getStoreKpi() {
+        StoreKpiResponse storeKpiResponse = storeService.getStoreKpi();
+        return ResponseEntity.status(HttpStatus.OK).body(storeKpiResponse);
+    }
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PutMapping("/stores/{storeId}/close")
+    public ResponseEntity<UpdateCloseDateResponse> closeStore(
+            @PathVariable Long storeId,
+            @RequestBody ClosedDateRequest req
+    ) {
+        UpdateCloseDateResponse res =
+                storeService.closeStore(storeId, req.getClosedAt(), req.getForce());
+
+        return ResponseEntity.ok(res);
+    }
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PutMapping("/stores/{storeId}/reopen")
+    public ResponseEntity<UpdateCloseDateResponse>reopenStore(
+            @PathVariable Long storeId
+    ){
+        UpdateCloseDateResponse res=storeService.reopenStore(storeId);
+        return ResponseEntity.status(HttpStatus.OK).body(res);
+    }
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PutMapping("/stores/{storeId}/closed-date")
+    public ResponseEntity<UpdateCloseDateResponse> updateCloseDate(
+            @PathVariable Long storeId,
+            @RequestBody ClosedDateRequest req
+    ) {
+        UpdateCloseDateResponse res =
+                storeService.updateCloseDate(storeId, req.getClosedAt());
+
+        return ResponseEntity.ok(res);
     }
     @GetMapping("/admin/temp")
     @PreAuthorize("hasRole('SUPER_ADMIN')")

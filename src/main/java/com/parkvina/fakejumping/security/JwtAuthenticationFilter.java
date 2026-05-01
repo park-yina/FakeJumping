@@ -1,5 +1,8 @@
 package com.parkvina.fakejumping.security;
 
+import com.parkvina.fakejumping.entity.Admin;
+import com.parkvina.fakejumping.enums.AdminStatus;
+import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.service.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,6 +27,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private final JwtUtils jwtUtils;
+    private final AdminMapper adminMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -47,17 +51,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = jwtUtils.resolveToken(request);
         if (token != null && jwtUtils.isValidToken(token)) {
 
+            Long adminId = jwtUtils.getAdminId(token);
+
+            Admin admin = adminMapper.findById(adminId);
+
+            if (admin == null) {
+                log.debug("[AUTH] 존재하지 않는 관리자");
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            if (admin.getAdminStatus() == AdminStatus.INACTIVE) {
+                log.debug("[AUTH] 비활성화된 계정 접근 차단");
+
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"message\":\"비활성화된 계정입니다.\"}");
+
+            }
+
             Authentication authentication = jwtUtils.getAuthentication(token);
 
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(authentication);
-
             SecurityContextHolder.setContext(context);
 
-        } else {
+        }
+          else {
             log.debug("[AUTH] 토큰 없음 또는 유효하지 않음");
         }
-
         filterChain.doFilter(request, response);
     }
 }
