@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.parkvina.fakejumping.mapper.DeviceMapper">
+    <select id="findDevicesPaged" resultType="com.parkvina.fakejumping.entity.Device">
+
+        SELECT *
+        FROM device
+        WHERE is_active = 1
+
+        <!-- 할당 여부 -->
+        <if test="assigned != null">
+            <choose>
+                <when test="assigned">
+                    AND store_id IS NOT NULL
+                </when>
+                <otherwise>
+                    AND store_id IS NULL
+                </otherwise>
+            </choose>
+        </if>
+
+        <!-- 디바이스 타입 -->
+        <if test="deviceType != null">
+            AND device_type = #{deviceType}
+        </if>
+
+        <!-- 매장 필터 -->
+        <if test="storeId != null">
+            AND store_id = #{storeId}
+        </if>
+
+        <!-- 상태 필터 (정리된 버전) -->
+        <choose>
+
+            <!-- ONLINE -->
+            <when test="status == 'ONLINE'">
+                AND last_ping >= DATE_SUB(NOW(), INTERVAL #{onlineSeconds} SECOND)
+            </when>
+
+            <!-- OFFLINE -->
+            <when test="status == 'OFFLINE'">
+                AND <![CDATA[
+                (last_ping IS NULL OR last_ping < DATE_SUB(NOW(), INTERVAL 30 SECOND))
+            ]]>
+            </when>
+
+            <!-- 기타 상태 -->
+            <when test="status != null">
+                AND status = #{status}
+            </when>
+
+        </choose>
+
+        <!-- 정렬 -->
+        ORDER BY
+        <choose>
+            <when test="status == 'ONLINE'">
+                last_ping DESC
+            </when>
+            <when test="status == 'OFFLINE'">
+                last_ping ASC
+            </when>
+            <otherwise>
+                id DESC
+            </otherwise>
+        </choose>
+
+        LIMIT #{size} OFFSET #{offset}
+
+    </select>
+</mapper>
