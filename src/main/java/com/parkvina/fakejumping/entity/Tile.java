@@ -11,7 +11,7 @@ public class Tile {
     private Long deviceId;
     private int position;
 
-    private LedColor color;      // RED / BLUE / GREEN / NULL
+    private LedColor color;
     private Boolean isPressed;
 
     private LocalDateTime updatedAt;

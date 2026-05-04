@@ -10,8 +10,10 @@ import com.parkvina.fakejumping.enums.DeviceType;
 import com.parkvina.fakejumping.mapper.DeviceMapper;
 import com.parkvina.fakejumping.security.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -23,12 +25,7 @@ public class DeviceService {
     private final AuthService authService;
     public static String generateByType(DeviceType type) {
 
-        String prefix = switch (type) {
-            case CAM -> "CAM";
-            case SCORE -> "SCR";
-            case CONTROLLER -> "CTR";
-            case LED-> "LED";
-        };
+        String prefix = getPrefix(type);
 
         String uuid = UUID.randomUUID()
                 .toString()
@@ -39,15 +36,22 @@ public class DeviceService {
     }
     public String generateSerial(DeviceType type, Long id) {
 
+        String prefix = getPrefix(type);
+
+        return prefix + "-" + String.format("%04d", id);
+    }
+
+    private static @NonNull String getPrefix(DeviceType type) {
         String prefix = switch (type) {
             case CAM -> "CAM";
             case SCORE -> "SCR";
             case CONTROLLER -> "CTR";
             case LED ->"LED";
         };
-
-        return prefix + "-" + String.format("%04d", id);
+        return prefix;
     }
+
+    @Transactional
     public void createDevice(DeviceCreateRequest req) {
 
         Admin me = authService.getLoginAdmin();
