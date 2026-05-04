@@ -100,7 +100,19 @@
     background: var(--violet-dim);
 }
 .nav-item.active i { opacity: 1; }
+.nav-sub {
+    padding-left: 20px;
+}
 
+.nav-item.sub {
+    font-size: 14px;
+    opacity: 0.85;
+}
+
+.arrow {
+    margin-left: auto;
+    transition: transform 0.2s ease;
+}
 /* Sidebar footer */
 .sidebar-footer {
     padding: 10px 8px;

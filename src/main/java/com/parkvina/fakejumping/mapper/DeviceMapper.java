@@ -16,6 +16,7 @@ public interface DeviceMapper {
                 device_uuid,
                 device_name,
                 device_type,
+                serial_number,
                 is_active,
                 status
             )
@@ -25,6 +26,7 @@ public interface DeviceMapper {
                 #{deviceUuid},
                 #{deviceName},
                 #{deviceType},
+                #{serialNumber},
                 1,
                 #{status}
             )
@@ -49,6 +51,7 @@ public interface DeviceMapper {
             @Param("offset") int offset,
             @Param("onlineSeconds") int onlineSeconds
     );
+
     int countDevices(
             @Param("assigned") Boolean assigned,
             @Param("deviceType") DeviceType deviceType,

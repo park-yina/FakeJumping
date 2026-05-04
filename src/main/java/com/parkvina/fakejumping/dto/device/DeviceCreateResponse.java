@@ -1,5 +1,6 @@
 package com.parkvina.fakejumping.dto.device;
 
+import com.parkvina.fakejumping.entity.Device;
 import com.parkvina.fakejumping.enums.DeviceStatus;
 import com.parkvina.fakejumping.enums.DeviceType;
 import lombok.Data;
@@ -17,4 +18,5 @@ public class DeviceCreateResponse {
     private DeviceStatus status;
 
     private Long storeId;
+
 }

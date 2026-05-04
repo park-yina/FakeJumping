@@ -2,6 +2,7 @@ package com.parkvina.fakejumping.service;
 
 import com.parkvina.fakejumping.controller.CustomException;
 import com.parkvina.fakejumping.dto.device.DeviceCreateRequest;
+import com.parkvina.fakejumping.dto.device.DeviceCreateResponse;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Device;
 import com.parkvina.fakejumping.enums.AdminRole;
@@ -23,6 +24,7 @@ public class DeviceService {
     private final DiscordService discordService;
     private final DeviceMapper deviceMapper;
     private final AuthService authService;
+
     public static String generateByType(DeviceType type) {
 
         String prefix = getPrefix(type);
@@ -34,6 +36,7 @@ public class DeviceService {
 
         return prefix + "-" + uuid;
     }
+
     public String generateSerial(DeviceType type, Long id) {
 
         String prefix = getPrefix(type);
@@ -46,13 +49,12 @@ public class DeviceService {
             case CAM -> "CAM";
             case SCORE -> "SCR";
             case CONTROLLER -> "CTR";
-            case LED ->"LED";
+            case LED -> "LED";
         };
         return prefix;
     }
-
     @Transactional
-    public void createDevice(DeviceCreateRequest req) {
+    public DeviceCreateResponse createDevice(DeviceCreateRequest req) {
 
         Admin me = authService.getLoginAdmin();
 
@@ -61,17 +63,29 @@ public class DeviceService {
         }
 
         Device device = new Device();
-
         device.setDeviceName(req.getDeviceName());
         device.setDeviceType(req.getDeviceType());
         device.setDeviceUuid(generateByType(req.getDeviceType()));
-
         device.setStoreId(null);
         device.setStatus(DeviceStatus.REGISTERED);
 
         deviceMapper.insertDevice(device);
 
         String serial = generateSerial(device.getDeviceType(), device.getId());
+        device.setSerialNumber(serial);
         deviceMapper.updateSerial(device.getId(), serial);
+
+        return from(device);
+    }
+    public static DeviceCreateResponse from(Device device) {
+        DeviceCreateResponse res = new DeviceCreateResponse();
+        res.setId(device.getId());
+        res.setDeviceName(device.getDeviceName());
+        res.setDeviceType(device.getDeviceType());
+        res.setDeviceUuid(device.getDeviceUuid());
+        res.setStoreId(device.getStoreId());
+        res.setSerialNumber(device.getSerialNumber());
+        res.setStatus(device.getStatus());
+        return res;
     }
 }

@@ -36,18 +36,42 @@
 
     <nav class="nav-section">
         <div id="super-admin-menu" style="display:none">
+
             <div class="nav-item active" data-page="home">
                 <i class="fa-solid fa-house"></i> 대시보드
             </div>
-            <div class="nav-item" data-page="create-store">
-                <i class="fa-solid fa-store"></i> 매장 생성
+
+            <!-- 🔥 매장 관리 -->
+            <div class="nav-group">
+                <div class="nav-item toggle">
+                    <i class="fa-solid fa-store"></i> 매장 관리
+                    <i class="fa-solid fa-chevron-down arrow"></i>
+                </div>
+
+                <div class="nav-sub" style="display:none">
+                    <div class="nav-item sub" data-page="create-store">매장 생성</div>
+                    <div class="nav-item sub" data-page="store-list">매장 목록</div>
+                </div>
             </div>
-            <div class="nav-item" data-page="store-list">
-                <i class="fa-solid fa-clipboard-list"></i> 매장 목록
+
+            <!-- 🔥 기기 관리 -->
+            <div class="nav-group">
+                <div class="nav-item toggle">
+                    <i class="fa-solid fa-microchip"></i> 기기 관리
+                    <i class="fa-solid fa-chevron-down arrow"></i>
+                </div>
+
+                <div class="nav-sub" style="display:none">
+                    <div class="nav-item sub" data-page="device-create">기기 등록</div>
+                    <div class="nav-item sub" data-page="device-list">기기 목록</div>
+                </div>
             </div>
+
+            <!-- 기타 -->
             <div class="nav-item" data-page="temp">
                 <i class="fa-solid fa-user-clock"></i> 임시 계정
             </div>
+
         </div>
 
         <div id="store-admin-menu" style="display:none">
@@ -76,4 +100,17 @@
     <div class="content-area" id="main-content"></div>
 </div>
 </body>
+<script>
+    document.querySelectorAll(".toggle").forEach(el => {
+        el.addEventListener("click", () => {
+            const sub = el.nextElementSibling;
+            const isOpen = sub.style.display === "block";
+
+            sub.style.display = isOpen ? "none" : "block";
+
+            const arrow = el.querySelector(".arrow");
+            arrow.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+        });
+    });
+</script>
 </html>
