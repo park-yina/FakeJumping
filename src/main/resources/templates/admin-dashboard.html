@@ -100,17 +100,4 @@
     <div class="content-area" id="main-content"></div>
 </div>
 </body>
-<script>
-    document.querySelectorAll(".toggle").forEach(el => {
-        el.addEventListener("click", () => {
-            const sub = el.nextElementSibling;
-            const isOpen = sub.style.display === "block";
-
-            sub.style.display = isOpen ? "none" : "block";
-
-            const arrow = el.querySelector(".arrow");
-            arrow.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
-        });
-    });
-</script>
 </html>

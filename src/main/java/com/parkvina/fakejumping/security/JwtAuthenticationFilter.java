@@ -67,6 +67,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json;charset=UTF-8");
                 response.getWriter().write("{\"message\":\"비활성화된 계정입니다.\"}");
+                return; // 🔥 이거 없어서 문제
+
 
             }
 

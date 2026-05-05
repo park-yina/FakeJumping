@@ -3,16 +3,65 @@ import {renderTemp, renderTempList, renderTest} from "../uis/temp-uis.js";
 import {renderCreateStore, renderStoreListPage} from "../uis/store-uis.js";
 import {createStoreApi, fetchRegions} from "../apis/store-api.js";
 import {logout} from "../admin-dashboard.js";
+import {renderCreateDevice} from "../uis/device-uis.js";
+
 export function sortByDateDesc(data) {
     return [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
+
 export function sortByDateAsc(data) {
     return [...data].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 }
+
 export function sortByStore(data) {
     return [...data].sort((a, b) =>
         a.storeName.localeCompare(b.storeName, 'ko')
     );
+}
+export function closeAllMenus() {
+    document.querySelectorAll(".nav-sub").forEach(sub => {
+        sub.style.display = "none";
+    });
+
+    document.querySelectorAll(".arrow").forEach(arrow => {
+        arrow.style.transform = "rotate(0deg)";
+    });
+}
+
+export function openGroupByPage(page) {
+    let group = null;
+
+    if (page.startsWith("device")) group = "기기 관리";
+    else if (page.startsWith("store")) group = "매장 관리";
+
+    if (!group) return;
+
+    document.querySelectorAll(".nav-group").forEach(g => {
+        const title = g.querySelector(".toggle")?.innerText;
+
+        if (title.includes(group)) {
+            const sub = g.querySelector(".nav-sub");
+            const arrow = g.querySelector(".arrow");
+
+            sub.style.display = "block";
+            arrow.style.transform = "rotate(180deg)";
+        }
+    });
+}
+export function initSidebarToggle() {
+    document.querySelectorAll(".toggle").forEach(el => {
+        el.addEventListener("click", (e) => {
+            e.stopPropagation(); // 🔥 이거 중요
+
+            const sub = el.nextElementSibling;
+            const isOpen = sub.style.display === "block";
+
+            sub.style.display = isOpen ? "none" : "block";
+
+            const arrow = el.querySelector(".arrow");
+            arrow.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+        });
+    });
 }
 export function buildStepHeader(step, labels = []) {
     return `
@@ -45,10 +94,11 @@ export function buildStepHeader(step, labels = []) {
         </div>
     `;
 }
+
 export async function openContactModal() {
     const defaultMsg = "과거 날짜로 오픈일 변경 요청";
 
-    const { value } = await Swal.fire({
+    const {value} = await Swal.fire({
         title: "관리자 문의",
         input: "textarea",
         inputValue: defaultMsg, // 🔥 기본값
@@ -98,6 +148,7 @@ export async function openContactModal() {
         });
     }
 }
+
 export async function createStoreHandler() {
     const storeName = document.getElementById("storeName").value;
     const address = document.getElementById("address").value;
@@ -139,12 +190,14 @@ export async function createStoreHandler() {
             try {
                 const err = await e.json();
                 msg = err.message || msg;
-            } catch {}
+            } catch {
+            }
         }
 
         Swal.fire("에러 발생", msg, "error");
     }
 }
+
 export function searchAddress() {
     new daum.Postcode({
         oncomplete: function (data) {
@@ -231,6 +284,7 @@ export async function resetPassword(username) {
         return false; // 🔥 실패 시
     }
 }
+
 export function formatDate(str) {
     return new Date(str).toLocaleString('ko-KR', {
         year: 'numeric', month: '2-digit', day: '2-digit',
@@ -239,14 +293,14 @@ export function formatDate(str) {
 }
 
 export function navigate(page, el, options = {}) {
-
+    closeAllMenus();
+    openGroupByPage(page);
     if (!el) {
         el = document.querySelector(`[data-page="${page}"]`);
     }
 
     if (el) setActive(el);
 
-    // 🔥 상태 저장 (페이지 + 옵션)
     const navState = {
         page,
         options
@@ -255,18 +309,20 @@ export function navigate(page, el, options = {}) {
     window.__NAV_STATE__ = navState;
     localStorage.setItem("navState", JSON.stringify(navState));
 
-    // 🔥 렌더
     if (page === 'home') renderHome();
     if (page === 'create-store') renderCreateStore();
     if (page === 'store-list') renderStoreListPage(options);
     if (page === 'temp') renderTemp();
+    if (page === 'device-create') renderCreateDevice();
 }
+
 export function setActive(el) {
     document.querySelectorAll('.nav-item, .dashboard-card')
         .forEach(e => e.classList.remove('active'));
 
     el.classList.add('active');
 }
+
 export async function fetchWithAuth(url, options = {}) {
     let token = localStorage.getItem("accessToken");
 

@@ -1,7 +1,7 @@
 import { createStoreApi } from "./apis/store-api.js";
 import { renderHome, renderTempSummary } from "./uis/common-uis.js";
 import {renderRegionSummary} from "./uis/store-uis.js";
-import {navigate, sortByDateAsc, sortByDateDesc, sortByStore} from "./utils/utils.js";
+import {initSidebarToggle, navigate, sortByDateAsc, sortByDateDesc, sortByStore} from "./utils/utils.js";
 
 
 function applyRole() {
@@ -73,7 +73,7 @@ async function init() {
     if (!isValid) return;
 
     applyRole();
-
+    initSidebarToggle();
     // 🔥 저장된 페이지 상태 복원
     const saved = localStorage.getItem("navState");
     const state = saved ? JSON.parse(saved) : null;

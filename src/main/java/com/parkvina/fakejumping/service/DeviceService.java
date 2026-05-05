@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -56,12 +58,6 @@ public class DeviceService {
     @Transactional
     public DeviceCreateResponse createDevice(DeviceCreateRequest req) {
 
-        Admin me = authService.getLoginAdmin();
-
-        if (me.getRole() != AdminRole.SUPER_ADMIN) {
-            throw new CustomException("권한 없음", HttpStatus.FORBIDDEN);
-        }
-
         Device device = new Device();
         device.setDeviceName(req.getDeviceName());
         device.setDeviceType(req.getDeviceType());
@@ -76,6 +72,30 @@ public class DeviceService {
         deviceMapper.updateSerial(device.getId(), serial);
 
         return from(device);
+    }
+    @Transactional
+    public List<DeviceCreateResponse> createDevices(List<DeviceCreateRequest> reqs) {
+
+        List<DeviceCreateResponse> result = new ArrayList<>();
+
+        for (DeviceCreateRequest req : reqs) {
+            Device device = new Device();
+            device.setDeviceName(req.getDeviceName());
+            device.setDeviceType(req.getDeviceType());
+            device.setDeviceUuid(generateByType(req.getDeviceType()));
+            device.setStoreId(null);
+            device.setStatus(DeviceStatus.REGISTERED);
+
+            deviceMapper.insertDevice(device);
+
+            String serial = generateSerial(device.getDeviceType(), device.getId());
+            deviceMapper.updateSerial(device.getId(), serial);
+            device.setSerialNumber(serial);
+
+            result.add(from(device));
+        }
+
+        return result;
     }
     public static DeviceCreateResponse from(Device device) {
         DeviceCreateResponse res = new DeviceCreateResponse();

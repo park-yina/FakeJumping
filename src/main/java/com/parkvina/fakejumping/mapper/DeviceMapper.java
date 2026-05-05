@@ -16,9 +16,7 @@ public interface DeviceMapper {
                 device_uuid,
                 device_name,
                 device_type,
-                serial_number,
-                is_active,
-                status
+                is_active
             )
             VALUES
             (
@@ -26,9 +24,7 @@ public interface DeviceMapper {
                 #{deviceUuid},
                 #{deviceName},
                 #{deviceType},
-                #{serialNumber},
-                1,
-                #{status}
+                1
             )
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")

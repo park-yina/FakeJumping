@@ -2,6 +2,7 @@ package com.parkvina.fakejumping.controller;
 
 import com.parkvina.fakejumping.dto.device.DeviceCreateRequest;
 import com.parkvina.fakejumping.dto.device.DeviceCreateResponse;
+import com.parkvina.fakejumping.enums.DeviceType;
 import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.DeviceMapper;
 import com.parkvina.fakejumping.security.AuthService;
@@ -12,10 +13,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
+import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -34,5 +35,20 @@ public class DeviceController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(deviceService.createDevice(req));
+    }
+
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PostMapping("/create/bulk")
+    public ResponseEntity<List<DeviceCreateResponse>> createDevices(@RequestBody List<DeviceCreateRequest> reqs) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(deviceService.createDevices(reqs));
+    }
+
+    @GetMapping("/device-types")
+    public List<String> getDeviceTypes() {
+        return Arrays.stream(DeviceType.values())
+                .map(Enum::name)
+                .toList();
     }
 }
