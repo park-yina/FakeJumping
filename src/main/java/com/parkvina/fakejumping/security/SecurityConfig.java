@@ -49,7 +49,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtUtils,adminMapper);
+        return new JwtAuthenticationFilter(jwtUtils, adminMapper);
     }
 
     @Bean
@@ -69,6 +69,7 @@ public class SecurityConfig {
 
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
+                            System.out.println("🔥 인증 실패 path: " + request.getServletPath());
                             System.out.println("🔥 인증 실패: " + authException.getMessage());
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                         })

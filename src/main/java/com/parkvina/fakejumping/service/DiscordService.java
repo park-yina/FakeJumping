@@ -1,10 +1,12 @@
 package com.parkvina.fakejumping.service;
 
 import com.parkvina.fakejumping.entity.Admin;
+import com.parkvina.fakejumping.entity.Device;
 import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.StoreMapper;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +28,90 @@ public class DiscordService {
     private String webhookUrl;
 
     private final WebClient webClient = WebClient.create();
+    public void sendDeviceRegisterLog(
+            String requester,
+            List<Device> devices
+    ) {
+
+        Map<String, Object> payload = getStringObjectMap(requester, devices);
+
+        webClient.post()
+                .uri(webhookUrl)
+                .bodyValue(payload)
+                .retrieve()
+
+                .onStatus(
+                        status -> status.isError(),
+                        response -> {
+
+                            log.error("❌ 장비 등록 Discord 전송 실패");
+
+                            return response.bodyToMono(String.class)
+
+                                    .flatMap(error ->
+                                            Mono.error(
+                                                    new RuntimeException(error)
+                                            ));
+                        }
+                )
+
+                .bodyToMono(String.class)
+
+                .doOnSuccess(res ->
+                        log.info("✅ 장비 등록 Discord 전송 성공")
+                )
+
+                .doOnError(err ->
+                        log.error("❌ 장비 등록 Discord 전송 에러", err)
+                )
+
+                .subscribe();
+    }
+
+    private static @NonNull Map<String, Object> getStringObjectMap(String requester, List<Device> devices) {
+        Map<String, Object> embed = Map.of(
+
+                "title", "🖥 장비 등록",
+
+                "description",
+                requester + "님이 장비를 등록했습니다.",
+
+                "color", 3447003,
+
+                "fields", List.of(
+
+                        Map.of(
+                                "name", "등록 장비",
+
+                                "value", devices.stream()
+
+                                        .map(d ->
+                                                "• "
+                                                        + d.getDeviceName()
+                                                        + " ["
+                                                        + d.getDeviceType()
+                                                        + "]"
+                                        )
+
+                                        .collect(Collectors.joining("\n")),
+
+                                "inline", false
+                        )
+                ),
+
+                "footer",
+                Map.of(
+                        "text",
+                        "FakeJumping Device System"
+                )
+        );
+
+        Map<String, Object> payload = Map.of(
+                "embeds",
+                List.of(embed)
+        );
+        return payload;
+    }
 
     public void sendPasswordResetRequest(String requester, String target, String storeName) {
 

@@ -30,6 +30,16 @@ public interface DeviceMapper {
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insertDevice(Device device);
 
+    @Select("""
+                SELECT device_name
+                FROM device
+                WHERE device_name = #{baseName}
+                   OR device_name LIKE CONCAT(#{baseName}, ' (%')
+            """)
+    List<String> findNamesByPrefix(
+            @Param("baseName") String baseName
+    );
+
     @Update("""
             UPDATE device
             SET serial_number = #{serialNumber}

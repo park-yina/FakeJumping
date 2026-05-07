@@ -67,7 +67,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json;charset=UTF-8");
                 response.getWriter().write("{\"message\":\"비활성화된 계정입니다.\"}");
-                return; // 🔥 이거 없어서 문제
+                return;
 
 
             }
@@ -78,8 +78,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             context.setAuthentication(authentication);
             SecurityContextHolder.setContext(context);
 
-        }
-          else {
+        } else {
             log.debug("[AUTH] 토큰 없음 또는 유효하지 않음");
         }
         filterChain.doFilter(request, response);

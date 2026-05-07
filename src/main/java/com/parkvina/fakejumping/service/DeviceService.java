@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -55,11 +57,12 @@ public class DeviceService {
         };
         return prefix;
     }
+
     @Transactional
     public DeviceCreateResponse createDevice(DeviceCreateRequest req) {
 
         Device device = new Device();
-        device.setDeviceName(req.getDeviceName());
+        device.setDeviceName(generateUniqueDeviceName(req.getDeviceName()));
         device.setDeviceType(req.getDeviceType());
         device.setDeviceUuid(generateByType(req.getDeviceType()));
         device.setStoreId(null);
@@ -73,30 +76,104 @@ public class DeviceService {
 
         return from(device);
     }
+
     @Transactional
-    public List<DeviceCreateResponse> createDevices(List<DeviceCreateRequest> reqs) {
+    public List<DeviceCreateResponse> createDevices(
+            List<DeviceCreateRequest> reqs
+    ) {
 
         List<DeviceCreateResponse> result = new ArrayList<>();
 
+        List<Device> createdDevices = new ArrayList<>();
+
         for (DeviceCreateRequest req : reqs) {
+
             Device device = new Device();
-            device.setDeviceName(req.getDeviceName());
+
+            device.setDeviceName(
+                    generateUniqueDeviceName(
+                            req.getDeviceName()
+                    )
+            );
+
             device.setDeviceType(req.getDeviceType());
-            device.setDeviceUuid(generateByType(req.getDeviceType()));
+
+            device.setDeviceUuid(
+                    generateByType(req.getDeviceType())
+            );
+
             device.setStoreId(null);
+
             device.setStatus(DeviceStatus.REGISTERED);
 
             deviceMapper.insertDevice(device);
 
-            String serial = generateSerial(device.getDeviceType(), device.getId());
-            deviceMapper.updateSerial(device.getId(), serial);
+            String serial =
+                    generateSerial(
+                            device.getDeviceType(),
+                            device.getId()
+                    );
+
+            deviceMapper.updateSerial(
+                    device.getId(),
+                    serial
+            );
+
             device.setSerialNumber(serial);
+
+            createdDevices.add(device);
 
             result.add(from(device));
         }
 
+        Admin me = authService.getLoginAdmin();
+
+        discordService.sendDeviceRegisterLog(
+                me.getUsername(),
+                createdDevices
+        );
+
         return result;
     }
+
+    private String generateUniqueDeviceName(String baseName) {
+
+        List<String> names =
+                deviceMapper.findNamesByPrefix(baseName);
+
+        // 동일 이름 자체가 없으면 그대로
+        if (names.isEmpty()) {
+            return baseName;
+        }
+
+        int max = 1;
+
+        Pattern pattern = Pattern.compile(
+                Pattern.quote(baseName) + " \\((\\d+)\\)"
+        );
+
+        for (String name : names) {
+
+            // "테스트"
+            if (name.equals(baseName)) {
+                max = Math.max(max, 1);
+                continue;
+            }
+
+            // "테스트 (2)"
+            Matcher matcher = pattern.matcher(name);
+
+            if (matcher.matches()) {
+
+                int num = Integer.parseInt(matcher.group(1));
+
+                max = Math.max(max, num);
+            }
+        }
+
+        return baseName + " (" + (max + 1) + ")";
+    }
+
     public static DeviceCreateResponse from(Device device) {
         DeviceCreateResponse res = new DeviceCreateResponse();
         res.setId(device.getId());
