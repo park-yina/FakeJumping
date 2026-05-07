@@ -387,6 +387,7 @@ public class StoreService {
     private String normalize(String value) {
         return (value == null || value.trim().isEmpty()) ? null : value;
     }
+
     public Map<String, Object> getStoresWithPaging(
             String region,
             String subRegion,
@@ -395,30 +396,21 @@ public class StoreService {
             int size
     ) {
 
-        // 1️⃣ normalize
         region = normalize(region);
         subRegion = normalize(subRegion);
         status = normalize(status);
 
-        // 🔥 status 대문자 통일 (중요)
         if (status != null) {
             status = status.toUpperCase();
         }
 
-        // 2️⃣ page / size 안전 처리
-        if (page < 0) page = 0;
-        if (size <= 0) size = 10;
-        if (size > 100) size = 100; // 과도한 조회 방지
-
-        int offset = page * size;
-
-        // 3️⃣ 조회
+        Paging paging = Paging.of(page, size);
         List<Store> stores = storeMapper.findStoresPaged(
                 region,
                 subRegion,
                 status,
-                size,
-                offset
+                paging.size(),
+                paging.offset()
         );
 
         int total = storeMapper.countStores(
@@ -427,7 +419,6 @@ public class StoreService {
                 status
         );
 
-        // 4️⃣ 변환
         List<StoreResult> content = stores.stream()
                 .map(store -> {
 
@@ -448,14 +439,16 @@ public class StoreService {
         Map<String, Object> result = new HashMap<>();
         result.put("content", content);
         result.put("total", total);
-        result.put("page", page);
-        result.put("size", size);
 
-        result.put("hasNext", (page + 1) * size < total);
-        result.put("hasPrev", page > 0);
+        result.put("page", paging.page());
+        result.put("size", paging.size());
+
+        result.put("hasNext", (paging.page() + 1) * paging.size() < total);
+        result.put("hasPrev", paging.page() > 0);
 
         return result;
     }
+
     public List<String> getSubRegionList(String region) {
         return storeMapper.findSubRegions(region);
     }
@@ -463,9 +456,11 @@ public class StoreService {
     public List<String> getRegionList() {
         return storeMapper.findRegions();
     }
+
     public List<TempResponse> tempAdminList() {
         return adminMapper.selectTempAdminList();
     }
+
     public Map<String, Object> getAdminSummary() {
         return adminMapper.countAdminSummary();
     }
@@ -493,7 +488,7 @@ public class StoreService {
         );
     }
 
-    public StoreKpiResponse getStoreKpi(){
+    public StoreKpiResponse getStoreKpi() {
 
         Long total = storeMapper.countTotalStores();
 
@@ -506,7 +501,7 @@ public class StoreService {
         Long closed = storeMapper.countClosedStores();
 
         int monthlyClosed = storeMapper.countMonthlyClosedStores();
-        int closingScheduled=storeMapper.countClosingScheduledStores();
+        int closingScheduled = storeMapper.countClosingScheduledStores();
         return new StoreKpiResponse(
                 total,
                 operating,
@@ -517,6 +512,7 @@ public class StoreService {
                 monthlyClosed
         );
     }
+
     public Map<String, Object> getStoreSummary() {
         return storeMapper.countStoreSummary();
     }
