@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
 
@@ -49,18 +50,31 @@ jobs:
       - name: Deploy to EC2
         if: github.event_name == 'push'
         uses: appleboy/ssh-action@v1.0.3
+
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+
           script: |
+
+            echo "===== CLEAN DOCKER ====="
+
             docker stop fakejumping-app || true
             docker rm fakejumping-app || true
 
+            # 사용 안하는 이미지/컨테이너 정리
+            docker system prune -af
+
+            echo "===== PULL IMAGE ====="
+
             docker pull parkyina/fakejumping:latest
+
+            echo "===== RUN CONTAINER ====="
 
             docker run -d \
               --name fakejumping-app \
+              --restart unless-stopped \
               -p 8080:8080 \
               -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
               -e JASYPT_PASSWORD=${{ secrets.JASYPT_PASSWORD }} \
@@ -69,3 +83,7 @@ jobs:
               -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }} \
               -e "SPRING_DATASOURCE_URL=jdbc:mysql://db-test.ca90segwm4q1.us-east-1.rds.amazonaws.com:3306/fakebattle?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true" \
               parkyina/fakejumping:latest
+
+            echo "===== DONE ====="
+
+            docker ps
