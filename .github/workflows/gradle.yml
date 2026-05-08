@@ -3,24 +3,37 @@ name: Java CI/CD with Gradle
 on:
   push:
     branches: [ "dev", "stage", "master" ]
+
   pull_request:
     branches: [ "master", "stage" ]
 
 jobs:
+
   build:
+
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
 
     steps:
+
       - uses: actions/checkout@v4
+
+      # =========================
+      # JAVA
+      # =========================
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
+
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      # =========================
+      # GRADLE
+      # =========================
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -28,33 +41,169 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
+      # =========================
+      # BUILD
+      # =========================
+
       - name: Build with Gradle
+
         run: ./gradlew build
+
         env:
           JASYPT_PASSWORD: ${{ secrets.JASYPT_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           WEB_HOOK: ${{ secrets.WEB_HOOK }}
 
+      # =========================
+      # CLOC INSTALL
+      # =========================
+
+      - name: Install cloc
+
+        run: |
+
+          sudo apt-get update
+          sudo apt-get install -y cloc
+
+      # =========================
+      # GENERATE RUNTIME STATS
+      # =========================
+
+      - name: Generate runtime stats
+
+        run: |
+
+          mkdir -p runtime-stats
+
+          cloc . --json \
+          > runtime-stats/fakejumping-${{ github.ref_name }}.json
+
+      # =========================
+      # APPEND EXTRA META
+      # =========================
+
+      - name: Append runtime metadata
+
+        run: |
+
+          python3 <<EOF
+
+          import json
+          from pathlib import Path
+
+          file_path = Path(
+            "runtime-stats/fakejumping-${{ github.ref_name }}.json"
+          )
+
+          with open(file_path, "r") as f:
+              data = json.load(f)
+
+          data["project"] = "fakejumping-admin"
+          data["branch"] = "${{ github.ref_name }}"
+          data["commit"] = "${{ github.sha }}"
+          data["runtime"] = "aws-ec2"
+          data["stack"] = [
+              "Spring Boot",
+              "MyBatis",
+              "JWT",
+              "Docker",
+              "AWS",
+              "MySQL"
+          ]
+
+          with open(file_path, "w") as f:
+              json.dump(data, f, indent=2)
+
+          EOF
+
+      # =========================
+      # AWS CREDENTIALS
+      # =========================
+
+      - name: Configure AWS credentials
+
+        uses: aws-actions/configure-aws-credentials@v4
+
+        with:
+          aws-access-key-id:
+            ${{ secrets.AWS_ACCESS_KEY_ID }}
+
+          aws-secret-access-key:
+            ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+          aws-region: us-east-1
+
+      # =========================
+      # UPLOAD RUNTIME STATS
+      # =========================
+
+      - name: Upload runtime stats to S3
+
+        run: |
+
+          aws s3 cp \
+          runtime-stats/fakejumping-${{ github.ref_name }}.json \
+          s3://luda-runtime-stats/fakejumping/
+
+      # =========================
+      # DOCKER LOGIN
+      # =========================
+
       - name: Login to DockerHub
+
         if: github.event_name == 'push'
-        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+        run: |
+
+          echo ${{ secrets.DOCKER_PASSWORD }} \
+          | docker login \
+            -u ${{ secrets.DOCKER_USERNAME }} \
+            --password-stdin
+
+      # =========================
+      # BUILD IMAGE
+      # =========================
 
       - name: Build Docker Image
+
         if: github.event_name == 'push'
-        run: docker build -t parkyina/fakejumping:latest .
+
+        run: |
+
+          docker build \
+          -t parkyina/fakejumping:latest .
+
+      # =========================
+      # PUSH IMAGE
+      # =========================
 
       - name: Push Docker Image
+
         if: github.event_name == 'push'
-        run: docker push parkyina/fakejumping:latest
+
+        run: |
+
+          docker push parkyina/fakejumping:latest
+
+      # =========================
+      # DEPLOY
+      # =========================
 
       - name: Deploy to EC2
+
         if: github.event_name == 'push'
+
         uses: appleboy/ssh-action@v1.0.3
 
         with:
-          host: ${{ secrets.EC2_HOST }}
+
+          host:
+            ${{ secrets.EC2_HOST }}
+
           username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+
+          key:
+            ${{ secrets.EC2_SSH_KEY }}
 
           script: |
 
@@ -63,7 +212,6 @@ jobs:
             docker stop fakejumping-app || true
             docker rm fakejumping-app || true
 
-            # 사용 안하는 이미지/컨테이너 정리
             docker system prune -af
 
             echo "===== PULL IMAGE ====="
