@@ -1,4 +1,4 @@
-name: Java CI/CD with Gradle
+name: Java CI/CD with Gradle AND Test
 
 on:
   push:
