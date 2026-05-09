@@ -75,8 +75,11 @@ jobs:
 
           mkdir -p runtime-stats
 
-          cloc . --json \
-          > runtime-stats/fakejumping-${{ github.ref_name }}.json
+            cloc . \
+            --include-lang=Java,XML,JavaScript,HTML,CSS \
+            --exclude-dir=node_modules,build,.idea,.gradle \
+            --json \
+            > runtime-stats/fakejumping-${{ github.ref_name }}.json
 
       # =========================
       # APPEND EXTRA META
