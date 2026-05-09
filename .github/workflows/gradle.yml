@@ -102,6 +102,7 @@ jobs:
           data["branch"] = "${{ github.ref_name }}"
           data["commit"] = "${{ github.sha }}"
           data["runtime"] = "aws-ec2"
+
           data["stack"] = [
               "Spring Boot",
               "MyBatis",
@@ -143,7 +144,7 @@ jobs:
 
           aws s3 cp \
           runtime-stats/fakejumping-${{ github.ref_name }}.json \
-          s3://luda-runtime-stats/fakejumping/
+          s3://luda-runtime-stats/fakejumping/${{ github.ref_name }}/stats.json
 
       # =========================
       # DOCKER LOGIN
@@ -171,7 +172,7 @@ jobs:
         run: |
 
           docker build \
-          -t parkyina/fakejumping:latest .
+          -t parkyina/fakejumping:${{ github.ref_name }} .
 
       # =========================
       # PUSH IMAGE
@@ -183,7 +184,7 @@ jobs:
 
         run: |
 
-          docker push parkyina/fakejumping:latest
+          docker push parkyina/fakejumping:${{ github.ref_name }}
 
       # =========================
       # DEPLOY
@@ -216,7 +217,7 @@ jobs:
 
             echo "===== PULL IMAGE ====="
 
-            docker pull parkyina/fakejumping:latest
+            docker pull parkyina/fakejumping:${{ github.ref_name }}
 
             echo "===== RUN CONTAINER ====="
 
@@ -230,7 +231,7 @@ jobs:
               -e SPRING_DATASOURCE_USERNAME=yina \
               -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }} \
               -e "SPRING_DATASOURCE_URL=jdbc:mysql://db-test.ca90segwm4q1.us-east-1.rds.amazonaws.com:3306/fakebattle?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true" \
-              parkyina/fakejumping:latest
+              parkyina/fakejumping:${{ github.ref_name }}
 
             echo "===== DONE ====="
 
