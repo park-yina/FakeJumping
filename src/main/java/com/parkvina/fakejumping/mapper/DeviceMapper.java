@@ -1,5 +1,6 @@
 package com.parkvina.fakejumping.mapper;
 
+import com.parkvina.fakejumping.dto.device.DeviceResult;
 import com.parkvina.fakejumping.entity.Device;
 import com.parkvina.fakejumping.enums.DeviceStatus;
 import com.parkvina.fakejumping.enums.DeviceType;
@@ -48,8 +49,7 @@ public interface DeviceMapper {
     void updateSerial(@Param("id") Long id,
                       @Param("serialNumber") String serialNumber);
 
-    List<Device> findDevicesPaged(
-            @Param("assigned") Boolean assigned,
+    List<DeviceResult> findDevicesPaged(
             @Param("deviceType") DeviceType deviceType,
             @Param("status") DeviceStatus status,
             @Param("storeId") Long storeId,
@@ -59,9 +59,14 @@ public interface DeviceMapper {
     );
 
     int countDevices(
-            @Param("assigned") Boolean assigned,
             @Param("deviceType") DeviceType deviceType,
             @Param("status") DeviceStatus status,
             @Param("storeId") Long storeId
     );
+
+    List<Device> findDevicesByIds(
+            @Param("ids") List<Long> ids
+    );
+
+    void deactivateDevices(List<Long> ids);
 }
