@@ -1,13 +1,15 @@
 package com.parkvina.fakejumping.service;
 
 import com.parkvina.fakejumping.controller.CustomException;
-import com.parkvina.fakejumping.dto.device.DeviceCreateRequest;
-import com.parkvina.fakejumping.dto.device.DeviceCreateResponse;
+import com.parkvina.fakejumping.dto.device.*;
+import com.parkvina.fakejumping.dto.store.StoreResult;
 import com.parkvina.fakejumping.entity.Admin;
 import com.parkvina.fakejumping.entity.Device;
+import com.parkvina.fakejumping.entity.Store;
 import com.parkvina.fakejumping.enums.AdminRole;
 import com.parkvina.fakejumping.enums.DeviceStatus;
 import com.parkvina.fakejumping.enums.DeviceType;
+import com.parkvina.fakejumping.enums.StoreStatus;
 import com.parkvina.fakejumping.mapper.DeviceMapper;
 import com.parkvina.fakejumping.security.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -15,10 +17,9 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestBody;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -174,6 +175,71 @@ public class DeviceService {
         return baseName + " (" + (max + 1) + ")";
     }
 
+    @Transactional
+    public List<DeviceDeactivateResponse> deactivateDevices(
+            DeviceDeleteRequest req
+    ) {
+
+        List<Long> ids = req.getIds();
+
+        if (ids == null || ids.isEmpty()) {
+
+            throw new CustomException(
+                    "삭제할 장비가 없습니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        List<Device> devices =
+                deviceMapper.findDevicesByIds(ids);
+
+        if (devices.isEmpty()) {
+
+            throw new CustomException(
+                    "장비를 찾을 수 없습니다.",
+                    HttpStatus.NOT_FOUND
+            );
+        }
+        if (devices.size() != ids.size()) {
+
+            throw new CustomException(
+                    "존재하지 않는 장비가 포함되어 있습니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        boolean hasOnlineDevice = devices.stream()
+
+                .anyMatch(device ->
+                        device.getStatus() == DeviceStatus.ONLINE
+                );
+
+        if (hasOnlineDevice && !req.isForce()) {
+
+            throw new CustomException(
+                    "온라인 상태 장비가 포함되어 있습니다.",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        deviceMapper.deactivateDevices(ids);
+
+        return devices.stream()
+
+                .map(device ->
+                        new DeviceDeactivateResponse(
+
+                                device.getId(),
+
+                                device.getStoreId(),
+
+                                false
+                        )
+                )
+
+                .toList();
+    }
+
     public static DeviceCreateResponse from(Device device) {
         DeviceCreateResponse res = new DeviceCreateResponse();
         res.setId(device.getId());
@@ -184,5 +250,72 @@ public class DeviceService {
         res.setSerialNumber(device.getSerialNumber());
         res.setStatus(device.getStatus());
         return res;
+    }
+
+    public Map<String, Object> getDeviceWithPaging(
+
+            DeviceType deviceType,
+            DeviceStatus status,
+            Long storeId,
+
+            int page,
+            int size
+    ) {
+
+        Admin me = authService.getLoginAdmin();
+        if (me.getRole() == AdminRole.STORE_ADMIN) {
+            storeId = me.getStoreId();
+            if (status == DeviceStatus.REGISTERED) {
+                throw new CustomException(
+                        "권한 없음",
+                        HttpStatus.FORBIDDEN
+                );
+            }
+        }
+
+        Paging paging = Paging.of(page, size);
+
+        List<DeviceResult> content =
+                deviceMapper.findDevicesPaged(
+
+                        deviceType,
+                        status,
+                        storeId,
+
+                        paging.size(),
+                        paging.offset(),
+
+                        30
+                );
+
+        int total =
+                deviceMapper.countDevices(
+
+                        deviceType,
+                        status,
+                        storeId
+                );
+
+        Map<String, Object> result = new HashMap<>();
+
+        result.put("content", content);
+
+        result.put("total", total);
+
+        result.put("page", paging.page());
+
+        result.put("size", paging.size());
+
+        result.put(
+                "hasNext",
+                (paging.page() + 1) * paging.size() < total
+        );
+
+        result.put(
+                "hasPrev",
+                paging.page() > 0
+        );
+
+        return result;
     }
 }

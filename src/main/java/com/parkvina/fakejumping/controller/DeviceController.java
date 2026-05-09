@@ -2,6 +2,7 @@ package com.parkvina.fakejumping.controller;
 
 import com.parkvina.fakejumping.dto.device.DeviceCreateRequest;
 import com.parkvina.fakejumping.dto.device.DeviceCreateResponse;
+import com.parkvina.fakejumping.enums.DeviceStatus;
 import com.parkvina.fakejumping.enums.DeviceType;
 import com.parkvina.fakejumping.mapper.AdminMapper;
 import com.parkvina.fakejumping.mapper.DeviceMapper;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -35,6 +37,55 @@ public class DeviceController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(deviceService.createDevice(req));
+    }
+
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','STORE_ADMIN')")
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> findDevices(
+
+            @RequestParam(required = false) DeviceType deviceType,
+
+            @RequestParam(required = false) String status,
+
+            @RequestParam(required = false) Long storeId,
+
+            @RequestParam(defaultValue = "0") int page,
+
+            @RequestParam(defaultValue = "10") int size
+    ) {
+
+        DeviceStatus deviceStatus = null;
+
+        try {
+
+            if (status != null) {
+
+                deviceStatus =
+                        DeviceStatus.valueOf(
+                                status.toUpperCase()
+                        );
+            }
+
+        } catch (IllegalArgumentException e) {
+
+            throw new CustomException(
+                    "존재하지 않는 상태값입니다.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        Map<String, Object> result =
+                deviceService.getDeviceWithPaging(
+
+                        deviceType,
+                        deviceStatus,
+                        storeId,
+
+                        page,
+                        size
+                );
+
+        return ResponseEntity.ok(result);
     }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
